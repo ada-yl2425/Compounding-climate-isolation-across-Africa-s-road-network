@@ -4,11 +4,21 @@
 # Fundamental packages for tabular data manipulation and scientific computing.
 numpy>=1.24.0
 pandas>=2.0.0
+scipy>=1.10.0
+
+# ==========================================
+# Geospatial & Network Analysis
+# ==========================================
+# Required by result1 network construction, OD routing, and clustering scripts.
+geopandas>=0.14.0
+igraph>=0.11.0
+networkx>=3.0
+scikit-learn>=1.3.0
 
 # ==========================================
 # Utility & Network API
 # ==========================================
-# Required for automated data acquisition and API interactions (e.g., Figshare).
+# Required for automated data acquisition and API interactions.
 requests>=2.31.0
 
 # ==========================================
