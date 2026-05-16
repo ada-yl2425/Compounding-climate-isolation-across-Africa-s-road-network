@@ -32,9 +32,9 @@ p_block    mean blocking probability under extreme
 
 Outputs saved
 -------------
-tests/hdm4_morris_sensitivity.png
-tests/hdm4_oat_sensitivity.png
-tests/hdm4_sensitivity_table.csv
+sensitivity/hdm4_morris_sensitivity.png
+sensitivity/hdm4_oat_sensitivity.png
+sensitivity/hdm4_sensitivity_table.csv
 """
 
 from __future__ import annotations

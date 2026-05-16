@@ -128,7 +128,9 @@ def main() -> None:
         for path in stability_files:
             if path.name == "bottleneck_stability_report.csv" or "report" in path.name:
                 continue
-            df = pd.read_csv(path, usecols=lambda c: c in {"CV_future", "bottleneck_future"})
+            df = pd.read_csv(
+                path, usecols=lambda c: c in {"CV_future", "bottleneck_future"}
+            )
             if df.empty:
                 continue
             parts = path.stem.replace("bottleneck_stability_", "").split("_")
@@ -140,14 +142,16 @@ def main() -> None:
                     "rcp": rcp,
                     "period": period,
                     "n_edges": int(len(df)),
-                    "mean_cv_future": round(float(df["CV_future"].mean()), 4)
-                    if "CV_future" in df.columns
-                    else None,
-                    "mean_bottleneck_future": round(
-                        float(df["bottleneck_future"].mean()), 6
-                    )
-                    if "bottleneck_future" in df.columns
-                    else None,
+                    "mean_cv_future": (
+                        round(float(df["CV_future"].mean()), 4)
+                        if "CV_future" in df.columns
+                        else None
+                    ),
+                    "mean_bottleneck_future": (
+                        round(float(df["bottleneck_future"].mean()), 6)
+                        if "bottleneck_future" in df.columns
+                        else None
+                    ),
                 }
             )
     stability = pd.DataFrame(stability_rows)
@@ -157,10 +161,14 @@ def main() -> None:
     required_rows = []
     for rcp in args.required_rcps:
         has_speed = False if inventory.empty else bool((inventory["rcp"] == rcp).any())
-        has_edge_stability = False if stability.empty else bool((stability["rcp"] == rcp).any())
+        has_edge_stability = (
+            False if stability.empty else bool((stability["rcp"] == rcp).any())
+        )
         has_report_stability = (
             False
-            if report.empty or "rcp" not in report.columns or "status" not in report.columns
+            if report.empty
+            or "rcp" not in report.columns
+            or "status" not in report.columns
             else bool(((report["rcp"] == rcp) & (report["status"] == "ok")).any())
         )
         has_robustness_stability = (

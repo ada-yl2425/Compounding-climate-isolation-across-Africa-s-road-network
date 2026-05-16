@@ -1,10 +1,9 @@
 """Preflight and manifest for paved-road assumption robustness.
 
-The default `web_1` network builder treats roads missing from the unpaved speed
-CSV as climate-neutral links filled with the median unpaved speed. Fig. 2a
-robustness requires a graph rerun under alternative paved assumptions. This
-script does not rebuild the graph by default; it writes a scenario manifest and
-input status table so the rerun is explicit and reproducible.
+The road network treats paved-road speed as climate-neutral links filled with
+the median unpaved speed. This program reruns the networks under alternative
+paved assumptions. This script does not rebuild the graph by default; it writes
+a scenario manifest and input status table so the rerun is explicit and reproducible.
 """
 
 from __future__ import annotations
@@ -20,7 +19,13 @@ from scipy.spatial import cKDTree
 from scipy.stats import spearmanr
 
 from sensitivity.config import COUNTRIES, add_common_path_args, resolve_paths
-from sensitivity.io_utils import ensure_dir, finite_numeric, jaccard, top_set, write_table
+from sensitivity.io_utils import (
+    ensure_dir,
+    finite_numeric,
+    jaccard,
+    top_set,
+    write_table,
+)
 
 
 PAVED_SCENARIOS = [
@@ -103,8 +108,12 @@ def speed_status(paths) -> pd.DataFrame:
                 "country": country,
                 "speed_csv_exists": True,
                 "n_unpaved_speed_rows": int(len(df)),
-                "median_unpaved_v_normal": round(float(finite_numeric(df["V_normal"]).median()), 3),
-                "median_unpaved_v_extreme": round(float(finite_numeric(df["V_extreme"]).median()), 3),
+                "median_unpaved_v_normal": round(
+                    float(finite_numeric(df["V_normal"]).median()), 3
+                ),
+                "median_unpaved_v_extreme": round(
+                    float(finite_numeric(df["V_extreme"]).median()), 3
+                ),
             }
         )
     return pd.DataFrame(rows)
@@ -118,7 +127,7 @@ def command_manifest(paths, repo_root: Path) -> pd.DataFrame:
                 "scenario": scenario["scenario"],
                 "step": "country_layer",
                 "command_template": (
-                    "python web/network_pipeline.py --base-dir "
+                    "python path/to/network_pipeline.py --base-dir "
                     f"{paths.data_base} --layer country --country <COUNTRY> "
                     "--surface all --paved-assumption "
                     f"{scenario['scenario']} --out-dir "
@@ -142,7 +151,9 @@ def command_manifest(paths, repo_root: Path) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def load_snapped_cities(nodes_csv: Path, node_coords: dict[int, tuple[float, float]]) -> pd.DataFrame:
+def load_snapped_cities(
+    nodes_csv: Path, node_coords: dict[int, tuple[float, float]]
+) -> pd.DataFrame:
     nodes = pd.read_csv(nodes_csv)
     graph_nodes = list(node_coords.keys())
     xy = np.array([node_coords[n] for n in graph_nodes], dtype=np.float64)
@@ -249,7 +260,10 @@ def compute_od_pairs(
                     "t_extreme_h": t1 if t1_ok else np.nan,
                     "increase_pct": inc,
                     "conn_type": conn_type,
-                    "cross_country": bool(cities.loc[i, "country_folder"] != cities.loc[j, "country_folder"]),
+                    "cross_country": bool(
+                        cities.loc[i, "country_folder"]
+                        != cities.loc[j, "country_folder"]
+                    ),
                 }
             )
     return pd.DataFrame(rows)
@@ -275,12 +289,14 @@ def summarize_od(
         "n_cross_country_connected": int(len(cross)),
         "cross_country_mean_increase_pct": round(cross_mean, 4),
         "all_pair_mean_increase_pct": round(all_mean, 4),
-        "all_pair_median_increase_pct": round(float(connected["increase_pct"].median()), 4),
+        "all_pair_median_increase_pct": round(
+            float(connected["increase_pct"].median()), 4
+        ),
         "pct_severe_gt50": round(float((od["increase_pct"] >= 50.0).mean() * 100), 4),
         "direct_edge_travel_penalty_pct": round(direct_edge_mean, 4),
-        "amplification_proxy_cross_country": round(cross_mean / direct_edge_mean, 4)
-        if direct_edge_mean > 0
-        else np.nan,
+        "amplification_proxy_cross_country": (
+            round(cross_mean / direct_edge_mean, 4) if direct_edge_mean > 0 else np.nan
+        ),
         "neutral_link_share_pct": round(float(neutral_mask.mean() * 100), 4),
     }
 
@@ -315,7 +331,9 @@ def hotspot_overlap(default_od: pd.DataFrame, scenario_od: pd.DataFrame) -> dict
 def run_checkpoint_od(paths, out_dir: Path, median_unpaved_v_normal: float) -> None:
     checkpoint = paths.network_results / "africa_layer" / "graph_checkpoint.pkl"
     nodes_csv = paths.data_base / "web" / "africa_layer" / "africa_nodes.csv"
-    graph, node_idx, node_coords, base_w0, base_w1 = build_igraph_from_checkpoint(checkpoint)
+    graph, node_idx, node_coords, base_w0, base_w1 = build_igraph_from_checkpoint(
+        checkpoint
+    )
     neutral_mask = np.isclose(base_w0, base_w1, rtol=1e-10, atol=1e-12)
     city_df = load_snapped_cities(nodes_csv, node_coords)
     write_table(city_df, out_dir / "paved_assumption_city_snaps.csv")
@@ -345,17 +363,31 @@ def run_checkpoint_od(paths, out_dir: Path, median_unpaved_v_normal: float) -> N
     write_table(overlap_df, out_dir / "paved_assumption_hotspot_overlap.csv")
 
     interp_rows = []
-    default_cross = float(summary.loc[summary["scenario"] == "default_web1", "cross_country_mean_increase_pct"].iloc[0])
+    default_cross = float(
+        summary.loc[
+            summary["scenario"] == "default_web1", "cross_country_mean_increase_pct"
+        ].iloc[0]
+    )
     for _, row in summary.iterrows():
         overlap = overlap_df[overlap_df["scenario"] == row["scenario"]].iloc[0]
         interp_rows.append(
             {
                 "scenario": row["scenario"],
-                "cross_country_mean_increase_pct": row["cross_country_mean_increase_pct"],
-                "change_vs_default_pp": round(row["cross_country_mean_increase_pct"] - default_cross, 4),
-                "amplification_proxy_cross_country": row["amplification_proxy_cross_country"],
+                "cross_country_mean_increase_pct": row[
+                    "cross_country_mean_increase_pct"
+                ],
+                "change_vs_default_pp": round(
+                    row["cross_country_mean_increase_pct"] - default_cross, 4
+                ),
+                "amplification_proxy_cross_country": row[
+                    "amplification_proxy_cross_country"
+                ],
                 "top25_corridor_jaccard": overlap["top25_corridor_jaccard"],
-                "interpretation": "stable" if overlap["top25_corridor_jaccard"] >= 0.8 else "sensitive",
+                "interpretation": (
+                    "stable"
+                    if overlap["top25_corridor_jaccard"] >= 0.8
+                    else "sensitive"
+                ),
             }
         )
     write_table(pd.DataFrame(interp_rows), out_dir / "interpretation_summary.csv")
@@ -387,9 +419,7 @@ def main() -> None:
         [
             {
                 "n_countries_with_speed_csv": int(status["speed_csv_exists"].sum()),
-                "median_country_unpaved_v_normal": round(
-                    median_unpaved_v_normal, 3
-                ),
+                "median_country_unpaved_v_normal": round(median_unpaved_v_normal, 3),
                 "median_country_unpaved_v_extreme": round(
                     float(status["median_unpaved_v_extreme"].median()), 3
                 ),

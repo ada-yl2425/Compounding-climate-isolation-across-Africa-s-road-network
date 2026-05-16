@@ -1,7 +1,7 @@
 """
 Appendix Figure: Cyclone Idai Case Validation
 ==============================================
-Compare model-predicted road vulnerability (P95 climate scenario, web_1 result1)
+Compare model-predicted road vulnerability (P95 climate scenario, result1)
 with documented disruption from Cyclone Idai, Mozambique, March 2019.
 
 Left panel  — Model prediction: district-level network efficiency loss (%) under
@@ -29,7 +29,7 @@ References (validation side):
 
 Usage:
     python appendix_idai_validation.py
-    python appendix_idai_validation.py --output figures/appendix_idai_validation.png
+    python appendix_idai_validation.py --output sensitivity/appendix_idai_validation.png
 """
 
 import argparse
@@ -48,26 +48,42 @@ from shapely.geometry import LineString, Point, Polygon
 # CONFIGURATION
 # =============================================================================
 BASE_RESULT1 = Path("path/to/africa_pavement/result/result1")
-BASE_RAW    = Path("path/to/africa_pavement/RAW")
+BASE_RAW = Path("path/to/africa_pavement/RAW")
 
-DISTRICT_GPKG = BASE_RESULT1 / "finding5_city_district_speed_efficiency_spatial" / "africa_district_road_degradation_extreme_climate.gpkg"
-CITY_PAIRS_CSV = BASE_RESULT1 / "finding3_4_city_pair_travel_time_cumulative" / "within_country_city_pairs_travel_time_normal_vs_extreme.csv"
-GADM_MOZ_L1   = BASE_RAW / "GADM_admin/gadm41_MOZ/gadm41_MOZ_1.shp"
+DISTRICT_GPKG = (
+    BASE_RESULT1
+    / "finding5_city_district_speed_efficiency_spatial"
+    / "africa_district_road_degradation_extreme_climate.gpkg"
+)
+CITY_PAIRS_CSV = (
+    BASE_RESULT1
+    / "finding3_4_city_pair_travel_time_cumulative"
+    / "within_country_city_pairs_travel_time_normal_vs_extreme.csv"
+)
+GADM_MOZ_L1 = BASE_RAW / "GADM_admin/gadm41_MOZ/gadm41_MOZ_1.shp"
 
 # Province number → name mapping (derived from district_id centroid analysis)
 PROVINCE_MAP = {
-    1: "Cabo Delgado", 2: "Gaza", 3: "Inhambane", 4: "Manica",
-    5: "Maputo City", 6: "Maputo Province", 7: "Nampula",
-    8: "Zambézia", 9: "Sofala", 10: "Tete", 11: "Niassa",
+    1: "Cabo Delgado",
+    2: "Gaza",
+    3: "Inhambane",
+    4: "Manica",
+    5: "Maputo City",
+    6: "Maputo Province",
+    7: "Nampula",
+    8: "Zambézia",
+    9: "Sofala",
+    10: "Tete",
+    11: "Niassa",
 }
 
 # Key cities (lon, lat, label, label_offset)
 CITIES = {
-    "Beira":       (34.840, -19.843, (-0.5, -0.35)),
-    "Chimoio":     (33.470, -19.110, ( 0.1, -0.35)),
-    "Nhamatanda":  (34.310, -19.340, ( 0.1,  0.15)),
-    "Buzi":        (34.020, -19.840, ( 0.1,  0.15)),
-    "Dondo":       (34.730, -19.610, ( 0.1,  0.15)),
+    "Beira": (34.840, -19.843, (-0.5, -0.35)),
+    "Chimoio": (33.470, -19.110, (0.1, -0.35)),
+    "Nhamatanda": (34.310, -19.340, (0.1, 0.15)),
+    "Buzi": (34.020, -19.840, (0.1, 0.15)),
+    "Dondo": (34.730, -19.610, (0.1, 0.15)),
 }
 
 # EN6 highway approximate centreline (Beira → Zimbabwe border via Chimoio)
@@ -88,9 +104,9 @@ IDAI_AFFECTED_PROVINCES = ["Sofala", "Manica"]
 # OCHA-reported specific road-cut locations (Sit-Reps 1–10)
 # Format: label -> (lon, lat, label_dx, label_dy, ha)
 OCHA_ROAD_CUTS = {
-    "Nhamatanda\n(OCHA #3)":  (34.310, -19.340,  0.18, -0.35, "left"),
-    "Buzi dist.\n(OCHA #1)":  (34.020, -19.840, -0.18,  0.20, "right"),
-    "Dondo (OCHA #2)":        (34.730, -19.610,  0.18,  0.30, "left"),
+    "Nhamatanda\n(OCHA #3)": (34.310, -19.340, 0.18, -0.35, "left"),
+    "Buzi dist.\n(OCHA #1)": (34.020, -19.840, -0.18, 0.20, "right"),
+    "Dondo (OCHA #2)": (34.730, -19.610, 0.18, 0.30, "left"),
 }
 
 # Quantitative facts for the annotation box
@@ -181,17 +197,27 @@ def make_figure(moz: gpd.GeoDataFrame, gadm_prov: gpd.GeoDataFrame, output_path:
     ax.plot(
         [c[0] for c in EN6_COORDS],
         [c[1] for c in EN6_COORDS],
-        color="#154360", linewidth=2.2, linestyle="-",
-        label="EN6 Beira–Chimoio corridor", zorder=6, solid_capstyle="round",
+        color="#154360",
+        linewidth=2.2,
+        linestyle="-",
+        label="EN6 Beira–Chimoio corridor",
+        zorder=6,
+        solid_capstyle="round",
     )
 
     # City markers
     for name, (lon, lat, offset) in CITIES.items():
         ax.plot(lon, lat, "o", color="#1b2631", markersize=5, zorder=8)
         ax.text(
-            lon + offset[0], lat + offset[1], name,
-            fontsize=7.5, fontweight="bold", color="#1b2631",
-            ha="left" if offset[0] > 0 else "right", va="center", zorder=9,
+            lon + offset[0],
+            lat + offset[1],
+            name,
+            fontsize=7.5,
+            fontweight="bold",
+            color="#1b2631",
+            ha="left" if offset[0] > 0 else "right",
+            va="center",
+            zorder=9,
         )
 
     # Label Sofala and Manica provinces
@@ -200,10 +226,19 @@ def make_figure(moz: gpd.GeoDataFrame, gadm_prov: gpd.GeoDataFrame, output_path:
         (4, "MANICA\nProv.", (33.0, -17.3)),
     ]:
         ax.text(
-            pos[0], pos[1], label,
-            fontsize=8, color="#1a5276", fontweight="bold",
-            ha="center", va="center", alpha=0.85, zorder=7,
-            bbox=dict(boxstyle="round,pad=0.2", facecolor="white", alpha=0.6, edgecolor="none"),
+            pos[0],
+            pos[1],
+            label,
+            fontsize=8,
+            color="#1a5276",
+            fontweight="bold",
+            ha="center",
+            va="center",
+            alpha=0.85,
+            zorder=7,
+            bbox=dict(
+                boxstyle="round,pad=0.2", facecolor="white", alpha=0.6, edgecolor="none"
+            ),
         )
 
     ax.set_xlim(xmin, xmax)
@@ -212,7 +247,9 @@ def make_figure(moz: gpd.GeoDataFrame, gadm_prov: gpd.GeoDataFrame, output_path:
     ax.set_ylabel("Latitude", fontsize=9)
     ax.set_title(
         "Model prediction\n(P95 climate scenario, baseline 2011–2020)",
-        fontsize=10.5, fontweight="bold", pad=8,
+        fontsize=10.5,
+        fontweight="bold",
+        pad=8,
     )
 
     # Colorbar
@@ -223,12 +260,25 @@ def make_figure(moz: gpd.GeoDataFrame, gadm_prov: gpd.GeoDataFrame, output_path:
     cbar.ax.tick_params(labelsize=7.5)
 
     # Province boundary legend entry
-    prov_line = Line2D([0], [0], color="#1a5276", lw=1.8, linestyle="--",
-                       label="Sofala / Manica province boundary")
-    en6_line = Line2D([0], [0], color="#154360", lw=2.2, linestyle="-",
-                      label="EN6 Beira–Chimoio corridor")
-    ax.legend(handles=[prov_line, en6_line], fontsize=7.5,
-              loc="lower left", framealpha=0.85)
+    prov_line = Line2D(
+        [0],
+        [0],
+        color="#1a5276",
+        lw=1.8,
+        linestyle="--",
+        label="Sofala / Manica province boundary",
+    )
+    en6_line = Line2D(
+        [0],
+        [0],
+        color="#154360",
+        lw=2.2,
+        linestyle="-",
+        label="EN6 Beira–Chimoio corridor",
+    )
+    ax.legend(
+        handles=[prov_line, en6_line], fontsize=7.5, loc="lower left", framealpha=0.85
+    )
 
     # ==================== RIGHT PANEL — documented disruption ====================
     ax2 = axes[1]
@@ -240,40 +290,90 @@ def make_figure(moz: gpd.GeoDataFrame, gadm_prov: gpd.GeoDataFrame, output_path:
     # OCHA-documented affected provinces: Sofala + Manica (GADM 4.1 boundaries)
     affected = gadm_prov[gadm_prov["NAME_1"].isin(IDAI_AFFECTED_PROVINCES)]
     affected.plot(
-        ax=ax2, color="#e74c3c", alpha=0.20, edgecolor="#c0392b",
-        linewidth=1.6, linestyle="-", zorder=3,
+        ax=ax2,
+        color="#e74c3c",
+        alpha=0.20,
+        edgecolor="#c0392b",
+        linewidth=1.6,
+        linestyle="-",
+        zorder=3,
     )
 
     # Highlight the model-predicted top-quartile districts that overlap with impact zone
     # (Sofala and Manica, top 50th pctile nationally)
     high_vuln = moz[(moz["prov_num"].isin([9, 4])) & (moz["eff_loss_pctile"] >= 60)]
-    high_vuln.plot(ax=ax2, color="#c0392b", alpha=0.55, edgecolor="#922b21",
-                   linewidth=0.6, zorder=4)
+    high_vuln.plot(
+        ax=ax2,
+        color="#c0392b",
+        alpha=0.55,
+        edgecolor="#922b21",
+        linewidth=0.6,
+        zorder=4,
+    )
 
     # EN6 corridor
     ax2.plot(
         [c[0] for c in EN6_COORDS],
         [c[1] for c in EN6_COORDS],
-        color="#154360", linewidth=2.2, linestyle="-", zorder=6, solid_capstyle="round",
+        color="#154360",
+        linewidth=2.2,
+        linestyle="-",
+        zorder=6,
+        solid_capstyle="round",
     )
 
     # OCHA-reported road cut markers
     for label, (lon, lat, dx, dy, ha) in OCHA_ROAD_CUTS.items():
-        ax2.plot(lon, lat, "X", color="#7b241c", markersize=9,
-                 markeredgecolor="white", markeredgewidth=0.8, zorder=9)
+        ax2.plot(
+            lon,
+            lat,
+            "X",
+            color="#7b241c",
+            markersize=9,
+            markeredgecolor="white",
+            markeredgewidth=0.8,
+            zorder=9,
+        )
         ax2.text(
-            lon + dx, lat + dy, label,
-            fontsize=7, color="#7b241c", va="center", ha=ha, zorder=10,
-            bbox=dict(boxstyle="round,pad=0.15", facecolor="white", alpha=0.8, edgecolor="none"),
+            lon + dx,
+            lat + dy,
+            label,
+            fontsize=7,
+            color="#7b241c",
+            va="center",
+            ha=ha,
+            zorder=10,
+            bbox=dict(
+                boxstyle="round,pad=0.15",
+                facecolor="white",
+                alpha=0.8,
+                edgecolor="none",
+            ),
         )
 
     # Beira city
     ax2.plot(34.840, -19.843, "o", color="#1b2631", markersize=6, zorder=8)
-    ax2.text(34.840 - 0.12, -19.843 - 0.45, "Beira",
-             fontsize=8, fontweight="bold", ha="right", va="top", zorder=9)
+    ax2.text(
+        34.840 - 0.12,
+        -19.843 - 0.45,
+        "Beira",
+        fontsize=8,
+        fontweight="bold",
+        ha="right",
+        va="top",
+        zorder=9,
+    )
     ax2.plot(33.470, -19.110, "o", color="#1b2631", markersize=5, zorder=8)
-    ax2.text(33.470 + 0.15, -19.110 + 0.2, "Chimoio",
-             fontsize=7.5, fontweight="bold", ha="left", va="bottom", zorder=9)
+    ax2.text(
+        33.470 + 0.15,
+        -19.110 + 0.2,
+        "Chimoio",
+        fontsize=7.5,
+        fontweight="bold",
+        ha="left",
+        va="bottom",
+        zorder=9,
+    )
 
     # Province outlines
     for pnum in [9, 4]:
@@ -288,26 +388,40 @@ def make_figure(moz: gpd.GeoDataFrame, gadm_prov: gpd.GeoDataFrame, output_path:
     ax2.set_title(
         "Documented disruption: Cyclone Idai, March 2019\n"
         "(Sources: OCHA Sit-Reps 1–19; Dahl et al. 2022, Int J Health Geogr)",
-        fontsize=10.5, fontweight="bold", pad=8,
+        fontsize=10.5,
+        fontweight="bold",
+        pad=8,
     )
 
     # Legend for right panel
     patch_impact = mpatches.Patch(
-        facecolor="#e74c3c", alpha=0.3, edgecolor="#c0392b",
+        facecolor="#e74c3c",
+        alpha=0.3,
+        edgecolor="#c0392b",
         label="OCHA-reported affected provinces\n(Sofala & Manica; GADM 4.1 boundaries)",
     )
     patch_model = mpatches.Patch(
-        facecolor="#c0392b", alpha=0.55, edgecolor="#922b21",
+        facecolor="#c0392b",
+        alpha=0.55,
+        edgecolor="#922b21",
         label="Model: Sofala/Manica districts ≥60th pctile\nefficiency loss (overlap region)",
     )
     marker_cut = Line2D(
-        [0], [0], marker="X", color="w", markerfacecolor="#7b241c",
-        markersize=9, markeredgecolor="white", label="OCHA-reported road cut location",
+        [0],
+        [0],
+        marker="X",
+        color="w",
+        markerfacecolor="#7b241c",
+        markersize=9,
+        markeredgecolor="white",
+        label="OCHA-reported road cut location",
     )
     en6_line2 = Line2D([0], [0], color="#154360", lw=2.2, label="EN6 corridor")
     ax2.legend(
         handles=[patch_impact, patch_model, marker_cut, en6_line2],
-        fontsize=7.2, loc="lower left", framealpha=0.88,
+        fontsize=7.2,
+        loc="lower left",
+        framealpha=0.88,
     )
 
     # ------------------------------------------------------------------
@@ -315,10 +429,18 @@ def make_figure(moz: gpd.GeoDataFrame, gadm_prov: gpd.GeoDataFrame, output_path:
     # ------------------------------------------------------------------
     stats_text = "\n".join(ANNOTATION_FACTS)
     fig.text(
-        0.5, 0.005, stats_text,
-        ha="center", va="bottom", fontsize=8,
-        bbox=dict(boxstyle="round,pad=0.5", facecolor="#fdfefe",
-                  edgecolor="#aab7b8", linewidth=0.8),
+        0.5,
+        0.005,
+        stats_text,
+        ha="center",
+        va="bottom",
+        fontsize=8,
+        bbox=dict(
+            boxstyle="round,pad=0.5",
+            facecolor="#fdfefe",
+            edgecolor="#aab7b8",
+            linewidth=0.8,
+        ),
         family="monospace",
     )
 
@@ -328,7 +450,9 @@ def make_figure(moz: gpd.GeoDataFrame, gadm_prov: gpd.GeoDataFrame, output_path:
     fig.suptitle(
         "Appendix: Spatial validation against Cyclone Idai (Mozambique, March 2019)\n"
         "Model-predicted vulnerability corridors vs. OCHA-documented road disruptions",
-        fontsize=12, fontweight="bold", y=0.99,
+        fontsize=12,
+        fontweight="bold",
+        y=0.99,
     )
 
     plt.tight_layout(rect=[0, 0.10, 1, 0.97])
@@ -343,7 +467,8 @@ def make_figure(moz: gpd.GeoDataFrame, gadm_prov: gpd.GeoDataFrame, output_path:
 def main():
     parser = argparse.ArgumentParser(description="Generate Idai validation figure")
     parser.add_argument(
-        "--output", type=str,
+        "--output",
+        type=str,
         default=str(Path(__file__).parent / "appendix_idai_validation.png"),
         help="Output PNG path",
     )
@@ -361,17 +486,29 @@ def main():
 
     # Print summary statistics for the paper text
     sofala_manica = moz[moz["prov_num"].isin([9, 4])]
-    top_districts = sofala_manica.sort_values("eff_loss_pctile", ascending=False).head(5)
+    top_districts = sofala_manica.sort_values("eff_loss_pctile", ascending=False).head(
+        5
+    )
     print("\n=== Key districts (Sofala + Manica) for paper text ===")
-    print(top_districts[["district_id", "province", "network_efficiency_loss_pct",
-                          "eff_loss_pctile", "cx", "cy"]].to_string())
+    print(
+        top_districts[
+            [
+                "district_id",
+                "province",
+                "network_efficiency_loss_pct",
+                "eff_loss_pctile",
+                "cx",
+                "cy",
+            ]
+        ].to_string()
+    )
 
     # Load city pair stats for Beira corridor
     df_city = pd.read_csv(CITY_PAIRS_CSV)
     beira_chimoio = df_city[
-        (df_city["country"] == "Mozambique") &
-        (df_city["city_A"].isin(["Beira", "Chimoio"])) &
-        (df_city["city_B"].isin(["Beira", "Chimoio"]))
+        (df_city["country"] == "Mozambique")
+        & (df_city["city_A"].isin(["Beira", "Chimoio"]))
+        & (df_city["city_B"].isin(["Beira", "Chimoio"]))
     ]
     if not beira_chimoio.empty:
         row = beira_chimoio.iloc[0]
@@ -382,7 +519,7 @@ def main():
             (moz_city["city_A"] == "Beira") | (moz_city["city_B"] == "Beira")
         ]
         print("\nBeira city pairs:")
-        print(beira[["city_A","city_B","increase_pct"]].to_string())
+        print(beira[["city_A", "city_B", "increase_pct"]].to_string())
 
     print("\nGenerating figure...")
     make_figure(moz, gadm_prov, output_path)

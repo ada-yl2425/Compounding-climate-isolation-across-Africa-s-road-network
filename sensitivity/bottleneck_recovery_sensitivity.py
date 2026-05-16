@@ -63,15 +63,15 @@ def score_edges(df: pd.DataFrame, spec: ScoreSpec) -> pd.Series:
     cv_norm = normalize_positive(cv)
 
     if spec.score_form == "raw_product":
-        score = (ni ** spec.ni_alpha) * cv
+        score = (ni**spec.ni_alpha) * cv
     elif spec.score_form == "normalized_product":
-        score = (ni_norm ** spec.ni_alpha) * cv_norm
+        score = (ni_norm**spec.ni_alpha) * cv_norm
     elif spec.score_form == "rank_sum":
         ni_rank = ni.rank(ascending=False, method="average", pct=True)
         cv_rank = cv.rank(ascending=False, method="average", pct=True)
         score = (1.0 - ni_rank) + (1.0 - cv_rank)
     elif spec.score_form == "additive_norm":
-        score = (ni_norm ** spec.ni_alpha) + cv_norm
+        score = (ni_norm**spec.ni_alpha) + cv_norm
     else:
         raise ValueError(f"Unknown score form: {spec.score_form}")
 
@@ -87,7 +87,9 @@ def score_specs() -> list[ScoreSpec]:
     ]
 
 
-def stability_tables(df: pd.DataFrame, out_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
+def stability_tables(
+    df: pd.DataFrame, out_dir: Path
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     unpaved = df[df["unpaved"] == 1].copy()
     if unpaved.empty:
         raise ValueError("No unpaved/climate-affected edges found in edge scores.")
@@ -95,7 +97,9 @@ def stability_tables(df: pd.DataFrame, out_dir: Path) -> tuple[pd.DataFrame, pd.
     baseline = normalize_positive(unpaved["NI"]) * normalize_positive(unpaved["CV"])
     n = len(unpaved)
     k_values = {"K500": min(500, n)}
-    k_values.update({f"top_{int(s*100)}pct": max(1, int(round(n * s))) for s in TOPK_SHARES})
+    k_values.update(
+        {f"top_{int(s*100)}pct": max(1, int(round(n * s))) for s in TOPK_SHARES}
+    )
 
     top_rows = []
     score_frame = pd.DataFrame(index=unpaved.index)
@@ -126,9 +130,9 @@ def stability_tables(df: pd.DataFrame, out_dir: Path) -> tuple[pd.DataFrame, pd.
         "upper_quartile": 0.75,
         "top_decile": 0.90,
     }
-    default_mask = (
-        unpaved["NI"] >= unpaved["NI"].quantile(0.50)
-    ) & (unpaved["CV"] >= unpaved["CV"].quantile(0.50))
+    default_mask = (unpaved["NI"] >= unpaved["NI"].quantile(0.50)) & (
+        unpaved["CV"] >= unpaved["CV"].quantile(0.50)
+    )
 
     for name, q in thresholds.items():
         mask = (unpaved["NI"] >= unpaved["NI"].quantile(q)) & (
@@ -304,7 +308,9 @@ def run_optional_recovery_alpha(
         for spec in variants:
             scores = score_edges(edge_scores, spec).reindex(edge_scores.index).fillna(0)
             order_guided = unpaved_idx[np.argsort(-scores.iloc[unpaved_idx].values)]
-            order_cv = unpaved_idx[np.argsort(-edge_scores["CV"].iloc[unpaved_idx].values)]
+            order_cv = unpaved_idx[
+                np.argsort(-edge_scores["CV"].iloc[unpaved_idx].values)
+            ]
 
             for f in PAVING_FRACTIONS:
                 n_pave = int(round(f * len(unpaved_idx)))
@@ -359,7 +365,7 @@ def write_readme(
     lines = [
         "# Bottleneck and Recovery Robustness",
         "",
-        "This module uses cached outputs from `web_3`: `02_edge_scores.csv` and `04_paving_experiment.csv`.",
+        "This module uses cached bottleneck outputs: `02_edge_scores.csv` and `04_paving_experiment.csv`.",
         "",
         "## Top-K geography stability",
         "",
@@ -396,7 +402,11 @@ def main() -> None:
 
     paths = resolve_paths(args.base_dir, args.output_dir)
     out_dir = ensure_dir(paths.output_root / "04_bottleneck_recovery")
-    edge_path = Path(args.edge_scores) if args.edge_scores else paths.bottleneck_dir / "02_edge_scores.csv"
+    edge_path = (
+        Path(args.edge_scores)
+        if args.edge_scores
+        else paths.bottleneck_dir / "02_edge_scores.csv"
+    )
     paving_path = (
         Path(args.paving_experiment)
         if args.paving_experiment

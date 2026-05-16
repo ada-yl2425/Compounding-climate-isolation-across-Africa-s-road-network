@@ -1,6 +1,6 @@
 """Facility-set and snap-threshold robustness audit for health accessibility.
 
-The default `web_2` pipeline uses all health CSV rows, snaps facilities within
+The default health-access pipeline uses all health CSV rows, snaps facilities within
 50 km to road nodes, and maps WorldPop pixels to nearest network nodes within
 50 km. This script audits those construction choices before any full Dijkstra
 rerun: facility exclusions, approximate population exclusion, and existing
@@ -73,7 +73,9 @@ def filter_facilities(df: pd.DataFrame, facility_set: str) -> pd.DataFrame:
     return df[df["_text"].str.contains(pattern, regex=True, na=False)].copy()
 
 
-def road_nodes_from_shp(path: Path, country: str, unpaved_only: bool = True) -> np.ndarray | None:
+def road_nodes_from_shp(
+    path: Path, country: str, unpaved_only: bool = True
+) -> np.ndarray | None:
     shp = path / country / f"{country}.shp"
     if not shp.exists():
         return None
@@ -86,7 +88,11 @@ def road_nodes_from_shp(path: Path, country: str, unpaved_only: bool = True) -> 
         gdf = gdf.to_crs("EPSG:4326")
     if unpaved_only:
         surf_col = next(
-            (c for c in ["Surface", "surface", "fclass", "highway"] if c in gdf.columns),
+            (
+                c
+                for c in ["Surface", "surface", "fclass", "highway"]
+                if c in gdf.columns
+            ),
             None,
         )
         if surf_col:
@@ -126,7 +132,9 @@ def road_nodes_from_cached_accessibility(path: Path, country: str) -> np.ndarray
 
 def load_road_nodes(paths, country: str, source: str) -> np.ndarray | None:
     if source in {"cached", "auto"}:
-        nodes = road_nodes_from_cached_accessibility(paths.health_accessibility, country)
+        nodes = road_nodes_from_cached_accessibility(
+            paths.health_accessibility, country
+        )
         if nodes is not None:
             return nodes
     if source in {"shp", "auto"}:
@@ -223,11 +231,11 @@ def population_snap_audit(
                 "sampled_pixels": int(len(pix_pop)),
                 "sampled_population": round(total_pop, 3),
                 "population_within_threshold": round(float(kept), 3),
-                "excluded_population_pct": round(
-                    float((1.0 - kept / total_pop) * 100), 3
-                )
-                if total_pop > 0
-                else np.nan,
+                "excluded_population_pct": (
+                    round(float((1.0 - kept / total_pop) * 100), 3)
+                    if total_pop > 0
+                    else np.nan
+                ),
             }
         )
     return out
@@ -237,7 +245,12 @@ def summarize_existing_health(summary_path: Path, out_dir: Path) -> pd.DataFrame
     if not summary_path.exists():
         return None
     df = pd.read_csv(summary_path)
-    required = {"country", "total_population", "isochrone_shrinkage_T60min", "tail_gap_ratio"}
+    required = {
+        "country",
+        "total_population",
+        "isochrone_shrinkage_T60min",
+        "tail_gap_ratio",
+    }
     if not required.issubset(df.columns):
         return None
     df = df.copy()
@@ -258,12 +271,18 @@ def summarize_existing_health(summary_path: Path, out_dir: Path) -> pd.DataFrame
                 ),
                 "mean_tail_gap_ratio": round(float(df["tail_gap_ratio"].mean()), 3),
                 "countries_with_TGR_gt_1": int((df["tail_gap_ratio"] > 1).sum()),
-                "median_spearman_rho": round(
-                    float(pd.to_numeric(df.get("spearman_rho"), errors="coerce").median()),
-                    4,
-                )
-                if "spearman_rho" in df.columns
-                else np.nan,
+                "median_spearman_rho": (
+                    round(
+                        float(
+                            pd.to_numeric(
+                                df.get("spearman_rho"), errors="coerce"
+                            ).median()
+                        ),
+                        4,
+                    )
+                    if "spearman_rho" in df.columns
+                    else np.nan
+                ),
             }
         ]
     )
@@ -313,7 +332,7 @@ def build_interpretation_summary(
         row = existing.iloc[0]
         rows.append(
             {
-                "robustness_question": "Cached web_2 health headline",
+                "robustness_question": "Cached health-access headline",
                 "evidence": (
                     f"Default cached output gives 1h coverage loss "
                     f"{row['one_hour_coverage_loss_pop_weighted_pct']:.2f}%, "

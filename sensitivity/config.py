@@ -10,11 +10,10 @@ from pathlib import Path
 DEFAULT_DATA_BASE = Path(
     os.environ.get(
         "AFRICA_PAVEMENT_BASE",
-        "/Users/tuibubansurfacepro/Library/CloudStorage/"
-        "GoogleDrive-yl2425@ic.ac.uk/我的云端硬盘/africa_pavement",
+        "path/to/africa_pavement",
     )
 )
-DEFAULT_OUTPUT_NAME = "robustness_outputs"
+DEFAULT_OUTPUT_NAME = "sensitivity"
 
 COUNTRIES = [
     "Algeria",
@@ -170,11 +169,10 @@ def add_common_path_args(parser) -> None:
     parser.add_argument(
         "--base-dir",
         default=str(DEFAULT_DATA_BASE),
-        help="Google Drive data base directory.",
+        help="Data base directory.",
     )
     parser.add_argument(
         "--output-dir",
         default=None,
         help=f"Output directory. Default: <base-dir>/{DEFAULT_OUTPUT_NAME}",
     )
-

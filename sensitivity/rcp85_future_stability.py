@@ -1,8 +1,8 @@
 """RCP8.5 bottleneck and intervention-priority stability checks.
 
-This is a robustness-only wrapper around the web_3 bottleneck stability logic.
+This is a robustness-only wrapper around the bottleneck stability logic.
 It keeps the expensive full network rebuilding out of scope, reads existing
-future road-speed CSVs, and writes compact tables under robustness_outputs.
+future road-speed CSVs, and writes compact tables under sensitivity.
 """
 
 from __future__ import annotations
@@ -101,11 +101,11 @@ def load_future_arrays(future_dir: Path) -> tuple[dict[str, np.ndarray], list[st
         arrays["center_lon"].append(df["center_lon"].to_numpy(dtype=np.float64))
         arrays["center_lat"].append(df["center_lat"].to_numpy(dtype=np.float64))
         arrays["V_normal"].append(df["V_normal"].clip(lower=0.5).to_numpy(dtype=float))
-        arrays["V_extreme"].append(df["V_extreme"].clip(lower=0.5).to_numpy(dtype=float))
-        arrays["p_block"].append(df["p_block"].clip(0.0, 0.99).to_numpy(dtype=float))
-        arrays["country_code"].append(
-            np.full(len(df), code, dtype=np.int16)
+        arrays["V_extreme"].append(
+            df["V_extreme"].clip(lower=0.5).to_numpy(dtype=float)
         )
+        arrays["p_block"].append(df["p_block"].clip(0.0, 0.99).to_numpy(dtype=float))
+        arrays["country_code"].append(np.full(len(df), code, dtype=np.int16))
 
     out = {key: np.concatenate(parts) for key, parts in arrays.items() if parts}
     if not out:
@@ -113,7 +113,9 @@ def load_future_arrays(future_dir: Path) -> tuple[dict[str, np.ndarray], list[st
     return out, countries
 
 
-def spatial_match(edges: pd.DataFrame, roads: dict[str, np.ndarray]) -> tuple[np.ndarray, np.ndarray]:
+def spatial_match(
+    edges: pd.DataFrame, roads: dict[str, np.ndarray]
+) -> tuple[np.ndarray, np.ndarray]:
     road_xy = np.column_stack([roads["center_lon"], roads["center_lat"]])
     edge_xy = edges[["mid_lon", "mid_lat"]].to_numpy(dtype=float)
     tree = cKDTree(road_xy)
@@ -288,7 +290,9 @@ def main() -> None:
 
     topk_grid = [(f"K={args.top_k}", args.top_k)]
     for share in TOPK_SHARES:
-        topk_grid.append((f"top_{share * 100:g}pct", int(round(len(base_score) * share))))
+        topk_grid.append(
+            (f"top_{share * 100:g}pct", int(round(len(base_score) * share)))
+        )
 
     topk_rows = []
     for label, k in topk_grid:
@@ -341,15 +345,31 @@ def main() -> None:
         ]
     )
 
-    write_table(summary, out_dir / f"rcp85_stability_summary_{args.gcm}_{args.period}.csv")
-    write_table(pd.DataFrame(topk_rows), out_dir / f"rcp85_topk_overlap_{args.gcm}_{args.period}.csv")
-    write_table(pd.DataFrame(priority_rows), out_dir / f"rcp85_priority_capture_{args.gcm}_{args.period}.csv")
-    write_table(pd.DataFrame(hotspot_rows), out_dir / f"rcp85_hotspot_countries_{args.gcm}_{args.period}.csv")
-    write_table(pd.DataFrame(hotspot_summary), out_dir / f"rcp85_hotspot_summary_{args.gcm}_{args.period}.csv")
+    write_table(
+        summary, out_dir / f"rcp85_stability_summary_{args.gcm}_{args.period}.csv"
+    )
+    write_table(
+        pd.DataFrame(topk_rows),
+        out_dir / f"rcp85_topk_overlap_{args.gcm}_{args.period}.csv",
+    )
+    write_table(
+        pd.DataFrame(priority_rows),
+        out_dir / f"rcp85_priority_capture_{args.gcm}_{args.period}.csv",
+    )
+    write_table(
+        pd.DataFrame(hotspot_rows),
+        out_dir / f"rcp85_hotspot_countries_{args.gcm}_{args.period}.csv",
+    )
+    write_table(
+        pd.DataFrame(hotspot_summary),
+        out_dir / f"rcp85_hotspot_summary_{args.gcm}_{args.period}.csv",
+    )
 
     if args.write_matched_edge_sample:
         sample_idx = top_indices(future_score, min(5000, len(future_score)))
-        sample = baseline.iloc[sample_idx][["u", "v", "mid_lon", "mid_lat", "NI", "CV"]].copy()
+        sample = baseline.iloc[sample_idx][
+            ["u", "v", "mid_lon", "mid_lat", "NI", "CV"]
+        ].copy()
         sample["CV_future"] = cv_future[sample_idx]
         sample["bottleneck_base"] = base_score[sample_idx]
         sample["bottleneck_future"] = future_score[sample_idx]
@@ -357,7 +377,9 @@ def main() -> None:
             countries[int(code)] if code >= 0 else ""
             for code in country_by_edge[sample_idx]
         ]
-        write_table(sample, out_dir / f"rcp85_top_edge_sample_{args.gcm}_{args.period}.csv")
+        write_table(
+            sample, out_dir / f"rcp85_top_edge_sample_{args.gcm}_{args.period}.csv"
+        )
 
     priority_df = pd.DataFrame(priority_rows)
     one_pct = priority_df[priority_df["budget"] == "1pct"].set_index("strategy")
@@ -367,27 +389,43 @@ def main() -> None:
     cv_only = float(one_pct.loc["future_CV_only", "future_bottleneck_capture_share"])
     random = float(one_pct.loc["random_expectation", "future_bottleneck_capture_share"])
     topk_df = pd.DataFrame(topk_rows)
-    k500_j = float(topk_df.loc[topk_df["budget"] == f"K={args.top_k}", "jaccard_overlap"].iloc[0])
-    top1_j = float(topk_df.loc[topk_df["budget"] == "top_1pct", "jaccard_overlap"].iloc[0])
-    top3_j = float(topk_df.loc[topk_df["budget"] == "top_3pct", "jaccard_overlap"].iloc[0])
-    top10_j = float(topk_df.loc[topk_df["budget"] == "top_10pct", "jaccard_overlap"].iloc[0])
+    k500_j = float(
+        topk_df.loc[topk_df["budget"] == f"K={args.top_k}", "jaccard_overlap"].iloc[0]
+    )
+    top1_j = float(
+        topk_df.loc[topk_df["budget"] == "top_1pct", "jaccard_overlap"].iloc[0]
+    )
+    top3_j = float(
+        topk_df.loc[topk_df["budget"] == "top_3pct", "jaccard_overlap"].iloc[0]
+    )
+    top10_j = float(
+        topk_df.loc[topk_df["budget"] == "top_10pct", "jaccard_overlap"].iloc[0]
+    )
     hotspot_df = pd.DataFrame(hotspot_summary)
     hotspot1 = float(
-        hotspot_df.loc[hotspot_df["top_share_pct"] == 1.0, "top10_country_overlap"].iloc[0]
+        hotspot_df.loc[
+            hotspot_df["top_share_pct"] == 1.0, "top10_country_overlap"
+        ].iloc[0]
     )
     hotspot5 = float(
-        hotspot_df.loc[hotspot_df["top_share_pct"] == 5.0, "top10_country_overlap"].iloc[0]
+        hotspot_df.loc[
+            hotspot_df["top_share_pct"] == 5.0, "top10_country_overlap"
+        ].iloc[0]
     )
     hotspot10 = float(
-        hotspot_df.loc[hotspot_df["top_share_pct"] == 10.0, "top10_country_overlap"].iloc[0]
+        hotspot_df.loc[
+            hotspot_df["top_share_pct"] == 10.0, "top10_country_overlap"
+        ].iloc[0]
     )
     interpretation = pd.DataFrame(
         [
             {
                 "check": "bottleneck ranking under stronger forcing",
-                "result": "rank_stable_exact_topk_moderate"
-                if rho >= 0.85 and top3_j >= 0.55
-                else "sensitive",
+                "result": (
+                    "rank_stable_exact_topk_moderate"
+                    if rho >= 0.85 and top3_j >= 0.55
+                    else "sensitive"
+                ),
                 "evidence": (
                     f"Spearman={rho:.3f}; Jaccard K={args.top_k}: {k500_j:.3f}; "
                     f"top-1%={top1_j:.3f}; top-3%={top3_j:.3f}; "
@@ -396,7 +434,9 @@ def main() -> None:
             },
             {
                 "check": "key hotspot geography",
-                "result": "stable" if hotspot1 >= 0.7 and hotspot5 >= 0.7 else "sensitive",
+                "result": (
+                    "stable" if hotspot1 >= 0.7 and hotspot5 >= 0.7 else "sensitive"
+                ),
                 "evidence": (
                     "top-10 country overlap: "
                     f"top-1% edges={hotspot1:.3f}; top-5%={hotspot5:.3f}; "
@@ -405,7 +445,9 @@ def main() -> None:
             },
             {
                 "check": "targeted paving priority proxy vs CV-only and random",
-                "result": "stable" if target > cv_only and target > random else "sensitive",
+                "result": (
+                    "stable" if target > cv_only and target > random else "sensitive"
+                ),
                 "evidence": (
                     "1% future bottleneck-score capture: "
                     f"baseline bottleneck priority={target:.3f}, "
@@ -414,7 +456,9 @@ def main() -> None:
             },
         ]
     )
-    write_table(interpretation, out_dir / f"rcp85_interpretation_{args.gcm}_{args.period}.csv")
+    write_table(
+        interpretation, out_dir / f"rcp85_interpretation_{args.gcm}_{args.period}.csv"
+    )
 
     print("RCP8.5 future stability written to:", out_dir)
     print(summary.to_string(index=False))

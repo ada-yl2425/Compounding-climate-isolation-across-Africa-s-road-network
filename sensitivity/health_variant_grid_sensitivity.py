@@ -1,12 +1,12 @@
-"""Minimum health-access variant grid for reviewer-facing robustness.
+"""Health-access variant grid for robustness test.
 
 This script avoids a full multi-source Dijkstra rerun for every facility
 definition. It uses cached node-level health accessibility, rebuilds facility
 anchors for a 3 x 3 x 2 variant grid, and applies a local access-distance
 adjustment to the cached travel-time surface.
 
-Outputs are intended as a sensitivity/proxy layer, not as a replacement for the
-original web_2 health-access pipeline.
+Outputs are intended as a sensitivity layer, not as a replacement for the
+original health-access pipeline.
 """
 
 from __future__ import annotations
@@ -27,7 +27,11 @@ from sensitivity.config import (
     add_common_path_args,
     resolve_paths,
 )
-from sensitivity.health_access_sensitivity import FACILITY_SETS, filter_facilities, load_health
+from sensitivity.health_access_sensitivity import (
+    FACILITY_SETS,
+    filter_facilities,
+    load_health,
+)
 from sensitivity.io_utils import ensure_dir, finite_numeric, weighted_mean, write_table
 
 
@@ -97,7 +101,9 @@ def load_node_accessibility(path: Path, country: str) -> pd.DataFrame | None:
     return df.reset_index(drop=True)
 
 
-def cached_midpoint_segment_points(node_xy: np.ndarray, max_points: int) -> tuple[np.ndarray, str]:
+def cached_midpoint_segment_points(
+    node_xy: np.ndarray, max_points: int
+) -> tuple[np.ndarray, str]:
     if len(node_xy) == 0:
         return np.empty((0, 2), dtype=float), "empty_cached_nodes"
     k = min(4, len(node_xy))
@@ -115,7 +121,9 @@ def cached_midpoint_segment_points(node_xy: np.ndarray, max_points: int) -> tupl
     return arr, "cached_node_neighbor_midpoint"
 
 
-def road_segment_proxy_points(paths, country: str, max_points: int) -> tuple[np.ndarray, str]:
+def road_segment_proxy_points(
+    paths, country: str, max_points: int
+) -> tuple[np.ndarray, str]:
     shp = paths.road_data / country / f"{country}.shp"
     if not shp.exists():
         return np.empty((0, 2), dtype=float), "missing_shp"
@@ -235,7 +243,9 @@ def build_country_context(
     if segment_source == "cached_midpoint":
         segment_xy, source = cached_midpoint_segment_points(node_xy, max_segment_points)
     elif segment_source == "shp_endpoint_midpoint":
-        segment_xy, source = road_segment_proxy_points(paths, country, max_segment_points)
+        segment_xy, source = road_segment_proxy_points(
+            paths, country, max_segment_points
+        )
     else:
         raise ValueError(segment_source)
     if segment_xy.size == 0:
@@ -244,7 +254,9 @@ def build_country_context(
     segment_tree = cKDTree(segment_xy)
     _, segment_to_node_idx = node_tree.query(segment_xy)
     pop = load_population_sample(paths, country, max_pop_pixels)
-    total_population = float(nodes["population"].sum()) if pop is None else pop.total_population
+    total_population = (
+        float(nodes["population"].sum()) if pop is None else pop.total_population
+    )
 
     return CountryContext(
         country=country,
@@ -261,7 +273,9 @@ def build_country_context(
     )
 
 
-def network_tree(ctx: CountryContext, mapping: str) -> tuple[cKDTree, np.ndarray, np.ndarray]:
+def network_tree(
+    ctx: CountryContext, mapping: str
+) -> tuple[cKDTree, np.ndarray, np.ndarray]:
     if mapping == "nearest_node":
         return ctx.node_tree, ctx.node_xy, np.arange(len(ctx.node_xy), dtype=int)
     if mapping == "nearest_segment_proxy":
@@ -302,7 +316,9 @@ def nearest_anchor_distance(ctx: CountryContext, anchors_xy: np.ndarray) -> np.n
     return d_deg * DEG_TO_KM
 
 
-def population_mapping(ctx: CountryContext, mapping: str) -> tuple[np.ndarray, np.ndarray, np.ndarray, int]:
+def population_mapping(
+    ctx: CountryContext, mapping: str
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, int]:
     if ctx.population is None:
         return (
             np.arange(len(ctx.nodes), dtype=int),
@@ -313,11 +329,21 @@ def population_mapping(ctx: CountryContext, mapping: str) -> tuple[np.ndarray, n
     sample_xy = np.column_stack([ctx.population.lon, ctx.population.lat])
     if mapping == "nearest_node":
         d_deg, idx = ctx.node_tree.query(sample_xy)
-        return idx.astype(int), d_deg * DEG_TO_KM, ctx.population.weight, ctx.population.sampled_pixels
+        return (
+            idx.astype(int),
+            d_deg * DEG_TO_KM,
+            ctx.population.weight,
+            ctx.population.sampled_pixels,
+        )
     if mapping == "nearest_segment_proxy":
         d_deg, seg_idx = ctx.segment_tree.query(sample_xy)
         idx = ctx.segment_to_node_idx[seg_idx]
-        return idx.astype(int), d_deg * DEG_TO_KM, ctx.population.weight, ctx.population.sampled_pixels
+        return (
+            idx.astype(int),
+            d_deg * DEG_TO_KM,
+            ctx.population.weight,
+            ctx.population.sampled_pixels,
+        )
     raise ValueError(mapping)
 
 
@@ -328,19 +354,25 @@ def country_variant_metrics(
     mapping: str,
     default_anchor_cache: dict[str, np.ndarray],
 ) -> tuple[dict, dict, pd.DataFrame]:
-    facilities, anchors, keep = facility_selection(ctx, facility_set, threshold_km, mapping)
+    facilities, anchors, keep = facility_selection(
+        ctx, facility_set, threshold_km, mapping
+    )
     default_key = mapping
     if default_key not in default_anchor_cache:
         _, default_anchors, _ = facility_selection(
             ctx, DEFAULT_FACILITY_SET, DEFAULT_THRESHOLD_KM, mapping
         )
-        default_anchor_cache[default_key] = nearest_anchor_distance(ctx, default_anchors)
+        default_anchor_cache[default_key] = nearest_anchor_distance(
+            ctx, default_anchors
+        )
     default_dist = default_anchor_cache[default_key]
     variant_dist = nearest_anchor_distance(ctx, anchors)
 
     n_total = int(len(facilities))
     n_within = int(keep.sum()) if len(keep) else 0
-    pop_node_idx, pop_dist_km, pop_weight, sampled_pixels = population_mapping(ctx, mapping)
+    pop_node_idx, pop_dist_km, pop_weight, sampled_pixels = population_mapping(
+        ctx, mapping
+    )
     included_pop_mask = pop_dist_km <= threshold_km
 
     exclusion = {
@@ -350,22 +382,30 @@ def country_variant_metrics(
         "threshold_km": threshold_km,
         "facilities_total": n_total,
         "facilities_excluded_at_threshold": n_total - n_within,
-        "excluded_facility_pct": round(float((1.0 - n_within / n_total) * 100), 3)
-        if n_total > 0
-        else np.nan,
+        "excluded_facility_pct": (
+            round(float((1.0 - n_within / n_total) * 100), 3) if n_total > 0 else np.nan
+        ),
         "sampled_pixels": sampled_pixels,
         "population_total_est": round(ctx.total_population, 3),
         "population_excluded_at_threshold": np.nan,
         "excluded_population_pct": np.nan,
-        "segment_source": ctx.segment_source if mapping == "nearest_segment_proxy" else "cached_nodes",
+        "segment_source": (
+            ctx.segment_source if mapping == "nearest_segment_proxy" else "cached_nodes"
+        ),
     }
 
     if pop_weight.sum() > 0:
         excluded_share = 1.0 - float(np.average(included_pop_mask, weights=pop_weight))
         exclusion["excluded_population_pct"] = round(excluded_share * 100, 3)
-        exclusion["population_excluded_at_threshold"] = round(ctx.total_population * excluded_share, 3)
+        exclusion["population_excluded_at_threshold"] = round(
+            ctx.total_population * excluded_share, 3
+        )
 
-    if n_within == 0 or not np.isfinite(variant_dist).any() or not included_pop_mask.any():
+    if (
+        n_within == 0
+        or not np.isfinite(variant_dist).any()
+        or not included_pop_mask.any()
+    ):
         metrics = {
             "country": ctx.country,
             "facility_set": facility_set,
@@ -382,16 +422,26 @@ def country_variant_metrics(
             "extreme_covered_pop_1h": np.nan,
             "status": "no_anchors_or_population",
         }
-        return metrics, exclusion, selected_facilities_for_regression(facilities, keep, facility_set, threshold_km, mapping, ctx.country)
+        return (
+            metrics,
+            exclusion,
+            selected_facilities_for_regression(
+                facilities, keep, facility_set, threshold_km, mapping, ctx.country
+            ),
+        )
 
-    node_delta_dist = np.nan_to_num(variant_dist - default_dist, nan=0.0, posinf=0.0, neginf=0.0)
+    node_delta_dist = np.nan_to_num(
+        variant_dist - default_dist, nan=0.0, posinf=0.0, neginf=0.0
+    )
     t_normal_nodes = np.maximum(
         0.0,
-        ctx.nodes["t_normal"].to_numpy(dtype=float) + node_delta_dist / ACCESS_SPEED_NORMAL_KMH,
+        ctx.nodes["t_normal"].to_numpy(dtype=float)
+        + node_delta_dist / ACCESS_SPEED_NORMAL_KMH,
     )
     t_extreme_nodes = np.maximum(
         0.0,
-        ctx.nodes["t_extreme"].to_numpy(dtype=float) + node_delta_dist / ACCESS_SPEED_EXTREME_KMH,
+        ctx.nodes["t_extreme"].to_numpy(dtype=float)
+        + node_delta_dist / ACCESS_SPEED_EXTREME_KMH,
     )
 
     idx = pop_node_idx[included_pop_mask]
@@ -399,15 +449,25 @@ def country_variant_metrics(
     sample_total_w = float(pop_weight.sum())
     total_w = float(weights.sum())
     included_share = total_w / sample_total_w if sample_total_w > 0 else np.nan
-    included_population_est = ctx.total_population * included_share if np.isfinite(included_share) else np.nan
+    included_population_est = (
+        ctx.total_population * included_share if np.isfinite(included_share) else np.nan
+    )
     t_normal = t_normal_nodes[idx]
     t_extreme = t_extreme_nodes[idx]
     delta_t = t_extreme - t_normal
 
     normal_cov_w = float(weights[t_normal <= 1.0].sum())
     extreme_cov_w = float(weights[t_extreme <= 1.0].sum())
-    normal_cov = ctx.total_population * normal_cov_w / sample_total_w if sample_total_w > 0 else np.nan
-    extreme_cov = ctx.total_population * extreme_cov_w / sample_total_w if sample_total_w > 0 else np.nan
+    normal_cov = (
+        ctx.total_population * normal_cov_w / sample_total_w
+        if sample_total_w > 0
+        else np.nan
+    )
+    extreme_cov = (
+        ctx.total_population * extreme_cov_w / sample_total_w
+        if sample_total_w > 0
+        else np.nan
+    )
     shrink = (normal_cov - extreme_cov) / normal_cov if normal_cov > 0 else np.nan
     p50_delta = weighted_quantile(delta_t, weights, 0.50)
     p90_delta = weighted_quantile(delta_t, weights, 0.90)
@@ -421,7 +481,9 @@ def country_variant_metrics(
         "n_facilities": n_total,
         "n_facility_anchors": n_within,
         "included_population_est": round(float(included_population_est), 3),
-        "one_hour_coverage_loss": round(float(shrink), 6) if np.isfinite(shrink) else np.nan,
+        "one_hour_coverage_loss": (
+            round(float(shrink), 6) if np.isfinite(shrink) else np.nan
+        ),
         "mean_tail_gap_ratio": round(float(tgr), 6) if np.isfinite(tgr) else np.nan,
         "tail_gap_ratio": round(float(tgr), 6) if np.isfinite(tgr) else np.nan,
         "pwmtt_delta": round(float(np.average(delta_t, weights=weights)), 6),
@@ -429,7 +491,13 @@ def country_variant_metrics(
         "extreme_covered_pop_1h": round(float(extreme_cov), 3),
         "status": "ok",
     }
-    return metrics, exclusion, selected_facilities_for_regression(facilities, keep, facility_set, threshold_km, mapping, ctx.country)
+    return (
+        metrics,
+        exclusion,
+        selected_facilities_for_regression(
+            facilities, keep, facility_set, threshold_km, mapping, ctx.country
+        ),
+    )
 
 
 def selected_facilities_for_regression(
@@ -441,7 +509,16 @@ def selected_facilities_for_regression(
     country: str,
 ) -> pd.DataFrame:
     if facilities.empty or len(keep) == 0 or not keep.any():
-        return pd.DataFrame(columns=["country", "lon", "lat", "facility_set", "threshold_km", "population_mapping"])
+        return pd.DataFrame(
+            columns=[
+                "country",
+                "lon",
+                "lat",
+                "facility_set",
+                "threshold_km",
+                "population_mapping",
+            ]
+        )
     out = facilities.loc[keep, ["lon", "lat"]].copy()
     out["country"] = country
     out["facility_set"] = facility_set
@@ -450,10 +527,16 @@ def selected_facilities_for_regression(
     return out
 
 
-def aggregate_variant_summary(country_df: pd.DataFrame, default_country: pd.DataFrame) -> pd.DataFrame:
-    default = default_country[["country", "isochrone_shrinkage_T60min", "tail_gap_ratio"]].copy()
+def aggregate_variant_summary(
+    country_df: pd.DataFrame, default_country: pd.DataFrame
+) -> pd.DataFrame:
+    default = default_country[
+        ["country", "isochrone_shrinkage_T60min", "tail_gap_ratio"]
+    ].copy()
     rows = []
-    for keys, sub in country_df.groupby(["facility_set", "threshold_km", "population_mapping"]):
+    for keys, sub in country_df.groupby(
+        ["facility_set", "threshold_km", "population_mapping"]
+    ):
         ok = sub[sub["status"] == "ok"].copy()
         if ok.empty:
             continue
@@ -461,11 +544,20 @@ def aggregate_variant_summary(country_df: pd.DataFrame, default_country: pd.Data
         one_hour = finite_numeric(ok["one_hour_coverage_loss"])
         tgr = pd.to_numeric(ok["tail_gap_ratio"], errors="coerce")
         merged = ok.merge(default, on="country", how="left")
-        cov_rho = merged[["one_hour_coverage_loss", "isochrone_shrinkage_T60min"]].corr(
-            method="spearman"
-        ).iloc[0, 1]
-        if "tail_gap_ratio_x" in merged.columns and "tail_gap_ratio_y" in merged.columns:
-            tgr_rho = merged[["tail_gap_ratio_x", "tail_gap_ratio_y"]].corr(method="spearman").iloc[0, 1]
+        cov_rho = (
+            merged[["one_hour_coverage_loss", "isochrone_shrinkage_T60min"]]
+            .corr(method="spearman")
+            .iloc[0, 1]
+        )
+        if (
+            "tail_gap_ratio_x" in merged.columns
+            and "tail_gap_ratio_y" in merged.columns
+        ):
+            tgr_rho = (
+                merged[["tail_gap_ratio_x", "tail_gap_ratio_y"]]
+                .corr(method="spearman")
+                .iloc[0, 1]
+            )
         else:
             tgr_rho = np.nan
         rows.append(
@@ -474,21 +566,27 @@ def aggregate_variant_summary(country_df: pd.DataFrame, default_country: pd.Data
                 "threshold_km": keys[1],
                 "population_mapping": keys[2],
                 "n_countries_ok": int(ok["country"].nunique()),
-                "one_hour_coverage_loss_pct": round(weighted_mean(one_hour * 100.0, weights), 3),
+                "one_hour_coverage_loss_pct": round(
+                    weighted_mean(one_hour * 100.0, weights), 3
+                ),
                 "mean_tail_gap_ratio": round(float(tgr.mean(skipna=True)), 3),
                 "countries_with_TGR_gt_1": int((tgr > 1.0).sum()),
-                "country_rank_spearman_vs_default_coverage": round(float(cov_rho), 4)
-                if np.isfinite(cov_rho)
-                else np.nan,
-                "country_rank_spearman_vs_default_TGR": round(float(tgr_rho), 4)
-                if np.isfinite(tgr_rho)
-                else np.nan,
+                "country_rank_spearman_vs_default_coverage": (
+                    round(float(cov_rho), 4) if np.isfinite(cov_rho) else np.nan
+                ),
+                "country_rank_spearman_vs_default_TGR": (
+                    round(float(tgr_rho), 4) if np.isfinite(tgr_rho) else np.nan
+                ),
             }
         )
-    return pd.DataFrame(rows).sort_values(["facility_set", "threshold_km", "population_mapping"])
+    return pd.DataFrame(rows).sort_values(
+        ["facility_set", "threshold_km", "population_mapping"]
+    )
 
 
-def ols_coefficients(y: np.ndarray, x: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray, float]:
+def ols_coefficients(
+    y: np.ndarray, x: np.ndarray
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, float]:
     mask = np.isfinite(y) & np.all(np.isfinite(x), axis=1)
     y = y[mask]
     x = x[mask]
@@ -506,7 +604,9 @@ def ols_coefficients(y: np.ndarray, x: np.ndarray) -> tuple[np.ndarray, np.ndarr
     return beta, se, p, r2
 
 
-def regression_table(grid_path: Path, selected_facilities: pd.DataFrame) -> pd.DataFrame | None:
+def regression_table(
+    grid_path: Path, selected_facilities: pd.DataFrame
+) -> pd.DataFrame | None:
     if not grid_path.exists() or selected_facilities.empty:
         return None
     grid = pd.read_csv(grid_path)
@@ -523,14 +623,24 @@ def regression_table(grid_path: Path, selected_facilities: pd.DataFrame) -> pd.D
     fac["cell_lon"] = grid_center(fac["lon"])
     fac["cell_lat"] = grid_center(fac["lat"])
     count = (
-        fac.groupby(["facility_set", "threshold_km", "population_mapping", "cell_lon", "cell_lat"])
+        fac.groupby(
+            [
+                "facility_set",
+                "threshold_km",
+                "population_mapping",
+                "cell_lon",
+                "cell_lat",
+            ]
+        )
         .size()
         .rename("n_facilities_variant")
         .reset_index()
     )
 
     rows = []
-    for keys, sub_count in count.groupby(["facility_set", "threshold_km", "population_mapping"]):
+    for keys, sub_count in count.groupby(
+        ["facility_set", "threshold_km", "population_mapping"]
+    ):
         df = grid.merge(sub_count, on=["cell_lon", "cell_lat"], how="left")
         df["n_facilities_variant"] = df["n_facilities_variant"].fillna(0.0)
         df["facility_per_million_variant"] = np.where(
@@ -547,7 +657,11 @@ def regression_table(grid_path: Path, selected_facilities: pd.DataFrame) -> pd.D
             ]
         )
         beta, se, p, r2 = ols_coefficients(y, x)
-        for term, idx in [("const", 0), ("log_facility_per_million", 1), ("log_population", 2)]:
+        for term, idx in [
+            ("const", 0),
+            ("log_facility_per_million", 1),
+            ("log_population", 2),
+        ]:
             rows.append(
                 {
                     "facility_set": keys[0],
@@ -578,7 +692,9 @@ def regression_table(grid_path: Path, selected_facilities: pd.DataFrame) -> pd.D
     return out
 
 
-def build_interpretation(summary: pd.DataFrame, exclusion50: pd.DataFrame, reg: pd.DataFrame | None) -> pd.DataFrame:
+def build_interpretation(
+    summary: pd.DataFrame, exclusion50: pd.DataFrame, reg: pd.DataFrame | None
+) -> pd.DataFrame:
     rows = []
     rows.append(
         {
@@ -643,7 +759,9 @@ def main() -> None:
     paths = resolve_paths(args.base_dir, args.output_dir)
     out_dir = ensure_dir(paths.output_root / "08_health_variant_grid")
     countries = args.countries or COUNTRIES
-    default_country = pd.read_csv(paths.health_accessibility / "country_accessibility_summary.csv")
+    default_country = pd.read_csv(
+        paths.health_accessibility / "country_accessibility_summary.csv"
+    )
 
     country_rows = []
     exclusion_rows = []
@@ -661,7 +779,12 @@ def main() -> None:
             args.segment_proxy_source,
         )
         if ctx is None:
-            missing_rows.append({"country": country, "reason": "missing node accessibility or health CSV"})
+            missing_rows.append(
+                {
+                    "country": country,
+                    "reason": "missing node accessibility or health CSV",
+                }
+            )
             continue
         context_rows.append(
             {
@@ -670,7 +793,9 @@ def main() -> None:
                 "n_health_rows": len(ctx.health),
                 "segment_points": len(ctx.segment_xy),
                 "segment_source": ctx.segment_source,
-                "population_sampled_pixels": ctx.population.sampled_pixels if ctx.population else 0,
+                "population_sampled_pixels": (
+                    ctx.population.sampled_pixels if ctx.population else 0
+                ),
                 "population_total_est": ctx.total_population,
             }
         )
@@ -710,7 +835,9 @@ def main() -> None:
 
     write_table(country_df, out_dir / "health_variant_grid_country_metrics.csv")
     write_table(summary_df, out_dir / "health_variant_grid_summary.csv")
-    write_table(exclusion_df, out_dir / "health_variant_exclusion_by_country_all_thresholds.csv")
+    write_table(
+        exclusion_df, out_dir / "health_variant_exclusion_by_country_all_thresholds.csv"
+    )
     write_table(exclusion50, out_dir / "health_50km_exclusion_by_country.csv")
     write_table(context_df, out_dir / "health_variant_input_context.csv")
     write_table(interp, out_dir / "interpretation_summary.csv")

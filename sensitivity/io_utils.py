@@ -65,4 +65,3 @@ def weighted_mean(values: pd.Series, weights: pd.Series) -> float:
     if not mask.any():
         return float("nan")
     return float(np.average(values[mask], weights=weights[mask]))
-
