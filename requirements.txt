@@ -1,0 +1,19 @@
+# ==========================================
+# Core Dependencies
+# ==========================================
+# Fundamental packages for tabular data manipulation and scientific computing.
+numpy>=1.24.0
+pandas>=2.0.0
+
+# ==========================================
+# Utility & Network API
+# ==========================================
+# Required for automated data acquisition and API interactions (e.g., Figshare).
+requests>=2.31.0
+
+# ==========================================
+# Code Quality, Formatting & CI/CD
+# ==========================================
+# Essential tools for automated formatting and testing in pipelines.
+black>=23.0.0
+pytest>=7.4.0
