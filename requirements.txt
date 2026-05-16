@@ -11,6 +11,7 @@ scipy>=1.10.0
 # ==========================================
 # Required for road, city, and administrative-boundary shapefile processing.
 geopandas>=0.14.0
+rasterio>=1.3.0
 
 # ==========================================
 # Climate Data Processing
@@ -20,6 +21,19 @@ dask>=2023.0.0
 h5netcdf>=1.2.0
 xarray>=2023.0.0
 tqdm>=4.66.0
+
+# ==========================================
+# Network Analysis
+# ==========================================
+# Required for graph construction, shortest paths, and bottleneck scoring.
+igraph>=0.11.0
+networkx>=3.0
+
+# ==========================================
+# Visualization
+# ==========================================
+# Required for result 3 recovery and de-isolation figures.
+matplotlib>=3.7.0
 
 # ==========================================
 # Utility & Network API
