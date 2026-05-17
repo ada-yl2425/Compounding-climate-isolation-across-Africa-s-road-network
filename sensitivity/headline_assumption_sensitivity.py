@@ -23,7 +23,6 @@ from sensitivity.config import (
 )
 from sensitivity.io_utils import ensure_dir, finite_numeric, jaccard, write_table
 
-
 UNREACHABLE = 1e8
 
 

@@ -28,7 +28,6 @@ from sensitivity.io_utils import (
     write_table,
 )
 
-
 PAVING_FRACTIONS = [0.0, 0.001, 0.002, 0.005, 0.01]
 N_RANDOM_TRIALS = 5
 UNREACHABLE = 1e8

@@ -34,7 +34,6 @@ from sensitivity.health_access_sensitivity import (
 )
 from sensitivity.io_utils import ensure_dir, finite_numeric, weighted_mean, write_table
 
-
 POPULATION_MAPPINGS = ["nearest_node", "nearest_segment_proxy"]
 DEFAULT_FACILITY_SET = "plus_pharmacy"
 DEFAULT_THRESHOLD_KM = 50.0

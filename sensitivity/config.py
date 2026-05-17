@@ -6,7 +6,6 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-
 DEFAULT_DATA_BASE = Path(
     os.environ.get(
         "AFRICA_PAVEMENT_BASE",

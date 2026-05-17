@@ -11,7 +11,6 @@ import pandas as pd
 from sensitivity.config import add_common_path_args, resolve_paths
 from sensitivity.io_utils import ensure_dir, write_table
 
-
 RAW_CLIMATE_RE = re.compile(
     r"^(?P<var>pr|mrso)_AFR-44_(?P<gcm>.+?)_(?P<rcp>rcp\d+)_"
     r".*?_(?P<freq>mon|day)_(?P<start>\d{6,8})-(?P<end>\d{6,8})\.nc$"

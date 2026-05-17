@@ -26,7 +26,6 @@ from sensitivity.config import (
 )
 from sensitivity.io_utils import ensure_dir, finite_numeric, weighted_mean, write_table
 
-
 FACILITY_SETS = {
     "hospital_only": ["hospital"],
     "hospital_clinic_healthcentre": [

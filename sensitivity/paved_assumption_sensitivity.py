@@ -27,7 +27,6 @@ from sensitivity.io_utils import (
     write_table,
 )
 
-
 PAVED_SCENARIOS = [
     {
         "scenario": "default_web1",

@@ -44,20 +44,56 @@ OUTPUT_DIR = BASE_DIR / "web/network_results/africa_layer"
 
 # country_folder name → ISO-3 (matches FOLDER_TO_ISO in run_africa_layer.py)
 FOLDER_TO_ISO = {
-    "Algeria": "DZA", "Angola": "AGO", "Benin": "BEN", "Botswana": "BWA",
-    "BurkinaFaso": "BFA", "Burundi": "BDI", "Cameroon": "CMR",
-    "CentralAfrican": "CAF", "Chad": "TCD", "Congo": "COG", "CongoDR": "COD",
-    "Djibouti": "DJI", "Egypt": "EGY", "Equatorial": "GNQ", "Eritrea": "ERI",
-    "Ethiopia": "ETH", "Gabon": "GAB", "Gambia": "GMB", "Ghana": "GHA",
-    "Guinea": "GIN", "GuineaBissau": "GNB", "IvoryCoast": "CIV",
-    "Kenya": "KEN", "Lesotho": "LSO", "Liberia": "LBR", "Libya": "LBY",
-    "Madagascar": "MDG", "Malawi": "MWI", "Mali": "MLI", "Mauritania": "MRT",
-    "Morocco": "MAR", "Mozambique": "MOZ", "Namibia": "NAM", "Niger": "NER",
-    "Nigeria": "NGA", "Rwanda": "RWA", "Senegal": "SEN",
-    "SierraLeone": "SLE", "Somalia": "SOM", "SouthAfrica": "ZAF",
-    "SouthSudan": "SSD", "Sudan": "SDN", "Swaziland": "SWZ",
-    "Tanzania": "TZA", "Togo": "TGO", "Tunisia": "TUN", "Uganda": "UGA",
-    "WestSahara": "ESH", "Zambia": "ZMB", "Zimbabwe": "ZWE",
+    "Algeria": "DZA",
+    "Angola": "AGO",
+    "Benin": "BEN",
+    "Botswana": "BWA",
+    "BurkinaFaso": "BFA",
+    "Burundi": "BDI",
+    "Cameroon": "CMR",
+    "CentralAfrican": "CAF",
+    "Chad": "TCD",
+    "Congo": "COG",
+    "CongoDR": "COD",
+    "Djibouti": "DJI",
+    "Egypt": "EGY",
+    "Equatorial": "GNQ",
+    "Eritrea": "ERI",
+    "Ethiopia": "ETH",
+    "Gabon": "GAB",
+    "Gambia": "GMB",
+    "Ghana": "GHA",
+    "Guinea": "GIN",
+    "GuineaBissau": "GNB",
+    "IvoryCoast": "CIV",
+    "Kenya": "KEN",
+    "Lesotho": "LSO",
+    "Liberia": "LBR",
+    "Libya": "LBY",
+    "Madagascar": "MDG",
+    "Malawi": "MWI",
+    "Mali": "MLI",
+    "Mauritania": "MRT",
+    "Morocco": "MAR",
+    "Mozambique": "MOZ",
+    "Namibia": "NAM",
+    "Niger": "NER",
+    "Nigeria": "NGA",
+    "Rwanda": "RWA",
+    "Senegal": "SEN",
+    "SierraLeone": "SLE",
+    "Somalia": "SOM",
+    "SouthAfrica": "ZAF",
+    "SouthSudan": "SSD",
+    "Sudan": "SDN",
+    "Swaziland": "SWZ",
+    "Tanzania": "TZA",
+    "Togo": "TGO",
+    "Tunisia": "TUN",
+    "Uganda": "UGA",
+    "WestSahara": "ESH",
+    "Zambia": "ZMB",
+    "Zimbabwe": "ZWE",
 }
 
 
@@ -92,7 +128,9 @@ def compute_road_degradation(speed_dir: Path) -> pd.DataFrame:
         )
 
     result = pd.DataFrame(rows)
-    print(f"  Loaded {len(result)} countries, {result['n_road_segments'].sum():,} road segments total")
+    print(
+        f"  Loaded {len(result)} countries, {result['n_road_segments'].sum():,} road segments total"
+    )
     return result
 
 
@@ -121,7 +159,9 @@ def compute_od_degradation(od_pairs_csv: Path, nodes_csv: Path) -> pd.DataFrame:
             iso3 = city_to_iso.get(r[city_col])
             folder = city_to_folder.get(r[city_col])
             if iso3:
-                rows.append({"iso3": iso3, "country_folder": folder, "increase_pct": inc})
+                rows.append(
+                    {"iso3": iso3, "country_folder": folder, "increase_pct": inc}
+                )
 
     df_long = pd.DataFrame(rows)
     grouped = (
@@ -187,11 +227,15 @@ def main():
 
     # Table 1: efficiency loss ranking
     loss_cols = [
-        "iso3", "country_folder",
-        "od_mean_increase_pct", "od_median_increase_pct",
-        "od_p75_increase_pct", "od_max_increase_pct",
+        "iso3",
+        "country_folder",
+        "od_mean_increase_pct",
+        "od_median_increase_pct",
+        "od_p75_increase_pct",
+        "od_max_increase_pct",
         "od_n_pairs",
-        "road_mean_speed_drop_pct", "n_road_segments",
+        "road_mean_speed_drop_pct",
+        "n_road_segments",
     ]
     loss_table = (
         merged[loss_cols]
@@ -214,10 +258,14 @@ def main():
 
     # Table 2: amplification ranking
     amp_cols = [
-        "iso3", "country_folder",
+        "iso3",
+        "country_folder",
         "amplification_ratio",
-        "od_mean_increase_pct", "road_mean_speed_drop_pct",
-        "road_mean_p_block", "od_n_pairs", "n_road_segments",
+        "od_mean_increase_pct",
+        "road_mean_speed_drop_pct",
+        "road_mean_p_block",
+        "od_n_pairs",
+        "n_road_segments",
     ]
     amp_table = (
         merged[amp_cols]
