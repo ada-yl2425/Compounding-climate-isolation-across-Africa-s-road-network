@@ -36,20 +36,20 @@ Method (predecessor-tree approach):
       6. buffering_ratio = 1 − actual_delta / direct_degradation
 
 Inputs (same as compute_health_accessibility.py):
-    BASE_DIR/RAW/Road_data/{country}/{country}.shp
-    BASE_DIR/road_speed_cordex/{country}_road_speed.csv
-    BASE_DIR/RAW/Health_data/{country}_health.csv
-    BASE_DIR/web/health_accessibility/node_accessibility_{country}.csv
+    <BASE_DIR>/RAW/Road_data/{country}/{country}.shp
+    <BASE_DIR>/road_speed_cordex/{country}_road_speed.csv
+    <BASE_DIR>/RAW/Health_data/{country}_health.csv
+    <BASE_DIR>/web/health_accessibility/node_accessibility_{country}.csv
         (used for pre-computed population weights; avoids re-running raster snap)
 
-Outputs → BASE_DIR/web/network_results/buffering_decomposition/
+Outputs → <BASE_DIR>/web/network_results/buffering_decomposition/
     country_buffering_stats.csv     per-country buffering summary
     node_buffering_{country}.csv    per-node decomposition detail
 
 Usage:
-    python web/network_buffering_decomposition.py --base /path/to/africa_pavement
-    python web/network_buffering_decomposition.py --base /path/to/africa_pavement --country Kenya
-    python web/network_buffering_decomposition.py --base /path/to/africa_pavement --no-node-output
+    python result2/network_buffering_decomposition.py --base <BASE_DIR>
+    python result2/network_buffering_decomposition.py --base <BASE_DIR> --country Kenya
+    python result2/network_buffering_decomposition.py --base <BASE_DIR> --no-node-output
 """
 
 import argparse
@@ -69,7 +69,7 @@ warnings.filterwarnings("ignore")
 # =============================================================================
 # CONFIGURATION  (mirrors compute_health_accessibility.py)
 # =============================================================================
-BASE_DIR_DEFAULT = Path("path/to/your/base/directory")
+BASE_DIR_DEFAULT = Path("path/to/base")
 
 SNAP_THRESHOLD_DEG = 0.0045
 MIN_ROAD_LENGTH_KM = 0.1
@@ -79,23 +79,60 @@ MAX_HEALTH_SNAP_KM = 50.0
 SUPER_SRC = "__super__"
 
 # Percentile windows for grouping nodes
-P50_LO, P50_HI = 0.40, 0.60   # 40th–60th percentile of baseline travel time
-P90_LO = 0.80                  # 80th–100th percentile
+P50_LO, P50_HI = 0.40, 0.60  # 40th–60th percentile of baseline travel time
+P90_LO = 0.80  # 80th–100th percentile
 
 WORLDPOP_PREFIX = {
-    "Algeria": "dza", "Angola": "ago", "Benin": "ben", "Botswana": "bwa",
-    "BurkinaFaso": "bfa", "Burundi": "bdi", "Cameroon": "cmr",
-    "CentralAfrican": "caf", "Chad": "tcd", "Congo": "cog", "CongoDR": "cod",
-    "Djibouti": "dji", "Egypt": "egy", "Equatorial": "gnq", "Eritrea": "eri",
-    "Ethiopia": "eth", "Gabon": "gab", "Gambia": "gmb", "Ghana": "gha",
-    "Guinea": "gin", "GuineaBissau": "gnb", "IvoryCoast": "civ", "Kenya": "ken",
-    "Lesotho": "lso", "Liberia": "lbr", "Libya": "lby", "Madagascar": "mdg",
-    "Malawi": "mwi", "Mali": "mli", "Mauritania": "mrt", "Morocco": "mar",
-    "Mozambique": "moz", "Namibia": "nam", "Niger": "ner", "Nigeria": "nga",
-    "Rwanda": "rwa", "Senegal": "sen", "SierraLeone": "sle", "Somalia": "som",
-    "SouthAfrica": "zaf", "SouthSudan": "ssd", "Sudan": "sdn", "Swaziland": "swz",
-    "Tanzania": "tza", "Togo": "tgo", "Tunisia": "tun", "Uganda": "uga",
-    "WestSahara": "", "Zambia": "zmb", "Zimbabwe": "zwe",
+    "Algeria": "dza",
+    "Angola": "ago",
+    "Benin": "ben",
+    "Botswana": "bwa",
+    "BurkinaFaso": "bfa",
+    "Burundi": "bdi",
+    "Cameroon": "cmr",
+    "CentralAfrican": "caf",
+    "Chad": "tcd",
+    "Congo": "cog",
+    "CongoDR": "cod",
+    "Djibouti": "dji",
+    "Egypt": "egy",
+    "Equatorial": "gnq",
+    "Eritrea": "eri",
+    "Ethiopia": "eth",
+    "Gabon": "gab",
+    "Gambia": "gmb",
+    "Ghana": "gha",
+    "Guinea": "gin",
+    "GuineaBissau": "gnb",
+    "IvoryCoast": "civ",
+    "Kenya": "ken",
+    "Lesotho": "lso",
+    "Liberia": "lbr",
+    "Libya": "lby",
+    "Madagascar": "mdg",
+    "Malawi": "mwi",
+    "Mali": "mli",
+    "Mauritania": "mrt",
+    "Morocco": "mar",
+    "Mozambique": "moz",
+    "Namibia": "nam",
+    "Niger": "ner",
+    "Nigeria": "nga",
+    "Rwanda": "rwa",
+    "Senegal": "sen",
+    "SierraLeone": "sle",
+    "Somalia": "som",
+    "SouthAfrica": "zaf",
+    "SouthSudan": "ssd",
+    "Sudan": "sdn",
+    "Swaziland": "swz",
+    "Tanzania": "tza",
+    "Togo": "tgo",
+    "Tunisia": "tun",
+    "Uganda": "uga",
+    "WestSahara": "",
+    "Zambia": "zmb",
+    "Zimbabwe": "zwe",
 }
 
 
@@ -166,7 +203,9 @@ def build_graphs(shp_path: Path, iri_path: Path):
     df_iri["V_normal"] = df_iri["V_normal"].clip(lower=0.01)
     df_iri["V_extreme"] = df_iri["V_extreme"].clip(lower=0.01)
     if "passable_rate_extreme" in df_iri.columns:
-        df_iri["p_block"] = (1.0 - df_iri["passable_rate_extreme"].clip(0, 1)).clip(0, 0.99)
+        df_iri["p_block"] = (1.0 - df_iri["passable_rate_extreme"].clip(0, 1)).clip(
+            0, 0.99
+        )
     elif "p_block" not in df_iri.columns:
         df_iri["p_block"] = (
             (df_iri["V_normal"] - df_iri["V_extreme"]) / df_iri["V_normal"]
@@ -355,7 +394,11 @@ def build_node_dataframe(
         t_n = info.get("t_normal_path", float("inf"))
         dd = info.get("direct_degradation", 0.0)
         t_e = t_extreme_map.get(node, float("inf"))
-        delta_t = max(0.0, t_e - t_n) if np.isfinite(t_e) and np.isfinite(t_n) else float("inf")
+        delta_t = (
+            max(0.0, t_e - t_n)
+            if np.isfinite(t_e) and np.isfinite(t_n)
+            else float("inf")
+        )
         pop = float(pop_arr[i])
 
         if dd > 0 and np.isfinite(delta_t):
@@ -367,15 +410,17 @@ def build_node_dataframe(
         else:
             buf = float("nan")
 
-        rows.append({
-            "node_id": node,
-            "t_normal": t_n,
-            "t_extreme": t_e,
-            "direct_degradation": dd,
-            "actual_delta": delta_t,
-            "buffering_ratio": buf,
-            "population": pop,
-        })
+        rows.append(
+            {
+                "node_id": node,
+                "t_normal": t_n,
+                "t_extreme": t_e,
+                "direct_degradation": dd,
+                "actual_delta": delta_t,
+                "buffering_ratio": buf,
+                "population": pop,
+            }
+        )
 
     return pd.DataFrame(rows)
 
@@ -441,16 +486,25 @@ def buffering_stats_from_groups(df_grouped: pd.DataFrame) -> dict:
         sub = df_grouped[df_grouped["pct_group"] == grp].copy()
         if len(sub) == 0:
             for key in (
-                "pwmean_buffering", "mean_buffering", "frac_positive_buffering",
-                "mean_dd_intensity", "mean_actual_intensity",
-                "mean_direct_degradation_h", "mean_actual_delta_h",
-                "mean_degree", "n_nodes",
+                "pwmean_buffering",
+                "mean_buffering",
+                "frac_positive_buffering",
+                "mean_dd_intensity",
+                "mean_actual_intensity",
+                "mean_direct_degradation_h",
+                "mean_actual_delta_h",
+                "mean_degree",
+                "n_nodes",
             ):
                 stats[f"{key}_{grp}"] = np.nan
             continue
 
         total_pop = sub["population"].sum()
-        w = sub["population"].values / total_pop if total_pop > 0 else np.ones(len(sub)) / len(sub)
+        w = (
+            sub["population"].values / total_pop
+            if total_pop > 0
+            else np.ones(len(sub)) / len(sub)
+        )
 
         buf = sub["buffering_ratio"].values
         stats[f"pwmean_buffering_{grp}"] = float(np.sum(w * buf))
@@ -527,7 +581,9 @@ def process_country(
         print(f"  [SKIP] {country}: missing files: {[str(m) for m in missing]}")
         return None
     if not node_acc_path.exists():
-        print(f"  [SKIP] {country}: node_accessibility CSV not found — run compute_health_accessibility.py first")
+        print(
+            f"  [SKIP] {country}: node_accessibility CSV not found — run compute_health_accessibility.py first"
+        )
         return None
 
     health_df = load_health_facilities(hlth_path)
@@ -550,7 +606,9 @@ def process_country(
 
     health_nodes = snap_health_to_network(health_df, node_coords)
     if not health_nodes:
-        print(f"  [SKIP] {country}: no health facilities within {MAX_HEALTH_SNAP_KM} km")
+        print(
+            f"  [SKIP] {country}: no health facilities within {MAX_HEALTH_SNAP_KM} km"
+        )
         return None
     print(f"  {len(health_nodes)} unique health-facility anchor nodes")
 
@@ -618,9 +676,19 @@ def process_country(
 
     if write_node_output:
         node_out = output_dir / f"node_buffering_{country}.csv"
-        node_df[["country", "node_id", "t_normal", "t_extreme",
-                  "direct_degradation", "actual_delta", "buffering_ratio",
-                  "degree", "population"]].to_csv(node_out, index=False)
+        node_df[
+            [
+                "country",
+                "node_id",
+                "t_normal",
+                "t_extreme",
+                "direct_degradation",
+                "actual_delta",
+                "buffering_ratio",
+                "degree",
+                "population",
+            ]
+        ].to_csv(node_out, index=False)
         print(f"  Node output → {node_out.name}")
 
     gc.collect()
@@ -644,26 +712,44 @@ def aggregate_continent(df: pd.DataFrame) -> dict:
     return {
         "n_countries": n,
         # Primary: population-weighted mean buffering by group
-        "continent_median_pwmean_buffering_p50": float(valid["pwmean_buffering_p50"].median()),
-        "continent_median_pwmean_buffering_p90": float(valid["pwmean_buffering_p90"].median()),
-        "continent_mean_pwmean_buffering_p50": float(valid["pwmean_buffering_p50"].mean()),
-        "continent_mean_pwmean_buffering_p90": float(valid["pwmean_buffering_p90"].mean()),
+        "continent_median_pwmean_buffering_p50": float(
+            valid["pwmean_buffering_p50"].median()
+        ),
+        "continent_median_pwmean_buffering_p90": float(
+            valid["pwmean_buffering_p90"].median()
+        ),
+        "continent_mean_pwmean_buffering_p50": float(
+            valid["pwmean_buffering_p50"].mean()
+        ),
+        "continent_mean_pwmean_buffering_p90": float(
+            valid["pwmean_buffering_p90"].mean()
+        ),
         # Cross-country counts
         "n_countries_p50_exceeds_p90": int(p50_exceeds.sum()),
         "pct_countries_p50_exceeds_p90": float(p50_exceeds.mean() * 100),
         "n_countries_p50_gt2x_p90": int(p50_exceeds_2x.sum()),
         "pct_countries_p50_gt2x_p90": float(p50_exceeds_2x.mean() * 100),
-        "median_p50_over_p90_ratio": float(valid["buffering_ratio_p50_over_p90"].median()),
+        "median_p50_over_p90_ratio": float(
+            valid["buffering_ratio_p50_over_p90"].median()
+        ),
         # DD intensity comparison (do local road conditions differ?)
-        "continent_median_dd_intensity_p50": float(valid["mean_dd_intensity_p50"].median()),
-        "continent_median_dd_intensity_p90": float(valid["mean_dd_intensity_p90"].median()),
+        "continent_median_dd_intensity_p50": float(
+            valid["mean_dd_intensity_p50"].median()
+        ),
+        "continent_median_dd_intensity_p90": float(
+            valid["mean_dd_intensity_p90"].median()
+        ),
         "median_dd_ratio_p90_over_p50": float(dd_ratio.median()),
         # Degree comparison (structural network evidence)
         "continent_mean_degree_p50": float(valid["mean_degree_p50"].mean()),
         "continent_mean_degree_p90": float(valid["mean_degree_p90"].mean()),
         # Fraction with positive buffering (addresses zero-inflation)
-        "continent_mean_frac_positive_p50": float(valid["frac_positive_buffering_p50"].mean()),
-        "continent_mean_frac_positive_p90": float(valid["frac_positive_buffering_p90"].mean()),
+        "continent_mean_frac_positive_p50": float(
+            valid["frac_positive_buffering_p50"].mean()
+        ),
+        "continent_mean_frac_positive_p90": float(
+            valid["frac_positive_buffering_p90"].mean()
+        ),
     }
 
 
@@ -674,11 +760,14 @@ def main():
     parser = argparse.ArgumentParser(
         description="Decompose climate travel-time increase into direct degradation and network buffering"
     )
-    parser.add_argument("--base", required=True, help="Path to africa_pavement directory")
+    parser.add_argument(
+        "--base", required=True, help="Path to africa_pavement directory"
+    )
     parser.add_argument("--country", default=None, help="Process only this country")
     parser.add_argument(
-        "--no-node-output", action="store_true",
-        help="Skip writing per-node CSV files (faster, less disk)"
+        "--no-node-output",
+        action="store_true",
+        help="Skip writing per-node CSV files (faster, less disk)",
     )
     args = parser.parse_args()
 
@@ -721,15 +810,33 @@ def main():
     print("  Continent-level results:")
     print(f"{'='*60}")
     print(f"  Countries processed                       : {agg['n_countries']}")
-    print(f"  Median pop-wt buffering — P50 group       : {agg['continent_median_pwmean_buffering_p50']*100:.1f}%")
-    print(f"  Median pop-wt buffering — P90 group       : {agg['continent_median_pwmean_buffering_p90']*100:.1f}%")
-    print(f"  Countries where P50 buffering > P90       : {agg['n_countries_p50_exceeds_p90']} / {agg['n_countries']}")
-    print(f"  Countries where P50 ≥ 2× P90             : {agg['n_countries_p50_gt2x_p90']} / {agg['n_countries']}")
-    print(f"  Median P50/P90 buffering ratio            : {agg['median_p50_over_p90_ratio']:.2f}×")
-    print(f"  Median DD intensity P50 / P90             : {agg['continent_median_dd_intensity_p50']:.4f} / {agg['continent_median_dd_intensity_p90']:.4f}")
-    print(f"  Median DD intensity ratio (P90/P50)       : {agg['median_dd_ratio_p90_over_p50']:.2f}×")
-    print(f"  Mean degree P50 / P90                     : {agg['continent_mean_degree_p50']:.2f} / {agg['continent_mean_degree_p90']:.2f}")
-    print(f"  Frac with positive buffering P50 / P90    : {agg['continent_mean_frac_positive_p50']*100:.1f}% / {agg['continent_mean_frac_positive_p90']*100:.1f}%")
+    print(
+        f"  Median pop-wt buffering — P50 group       : {agg['continent_median_pwmean_buffering_p50']*100:.1f}%"
+    )
+    print(
+        f"  Median pop-wt buffering — P90 group       : {agg['continent_median_pwmean_buffering_p90']*100:.1f}%"
+    )
+    print(
+        f"  Countries where P50 buffering > P90       : {agg['n_countries_p50_exceeds_p90']} / {agg['n_countries']}"
+    )
+    print(
+        f"  Countries where P50 ≥ 2× P90             : {agg['n_countries_p50_gt2x_p90']} / {agg['n_countries']}"
+    )
+    print(
+        f"  Median P50/P90 buffering ratio            : {agg['median_p50_over_p90_ratio']:.2f}×"
+    )
+    print(
+        f"  Median DD intensity P50 / P90             : {agg['continent_median_dd_intensity_p50']:.4f} / {agg['continent_median_dd_intensity_p90']:.4f}"
+    )
+    print(
+        f"  Median DD intensity ratio (P90/P50)       : {agg['median_dd_ratio_p90_over_p50']:.2f}×"
+    )
+    print(
+        f"  Mean degree P50 / P90                     : {agg['continent_mean_degree_p50']:.2f} / {agg['continent_mean_degree_p90']:.2f}"
+    )
+    print(
+        f"  Frac with positive buffering P50 / P90    : {agg['continent_mean_frac_positive_p50']*100:.1f}% / {agg['continent_mean_frac_positive_p90']*100:.1f}%"
+    )
     print(f"\n  Outputs in: {out_dir}")
 
 

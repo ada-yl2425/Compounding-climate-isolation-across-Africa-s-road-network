@@ -16,9 +16,23 @@ Outputs (written to OUTPUT_DIR):
   country_accessibility_summary.csv   — PWMTT / Gini / Spearman per country
   africa_accessibility_summary.csv    — continent-level aggregation
 
+Inputs:
+    <BASE_DIR>/RAW/Road_data/{country}/{country}.shp
+    <BASE_DIR>/road_speed_cordex/{country}_road_speed.csv
+    <BASE_DIR>/RAW/Health_data/{country}_health.csv
+    <BASE_DIR>/RAW/Pop_data/{iso3}_ppp_2020_UNadj_constrained.tif
+
+Outputs:
+    <OUTPUT_DIR>/node_accessibility_{country}.csv
+    <OUTPUT_DIR>/country_accessibility_summary.csv
+    <OUTPUT_DIR>/africa_accessibility_summary.csv
+
+Default OUTPUT_DIR:
+    <BASE_DIR>/web/health_accessibility/
+
 Usage:
-    python compute_health_accessibility.py --base-dir /path/to/africa_pavement
-    python compute_health_accessibility.py --base-dir /path/to/africa_pavement --country Kenya
+    python data_procession/compute_health_accessibility.py --base-dir <BASE_DIR>
+    python data_procession/compute_health_accessibility.py --base-dir <BASE_DIR> --country Kenya
 """
 
 import argparse
@@ -39,7 +53,7 @@ warnings.filterwarnings("ignore")
 # =============================================================================
 # CONFIGURATION — mirror network_pipeline.py settings
 # =============================================================================
-BASE_DIR_DEFAULT = Path("path/to/your/base/directory")
+BASE_DIR_DEFAULT = Path("path/to/base")
 
 SNAP_THRESHOLD_DEG = 0.0045  # ~500 m — same as pipeline
 MIN_ROAD_LENGTH_KM = 0.1

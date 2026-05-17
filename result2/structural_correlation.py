@@ -21,19 +21,18 @@ Analysis
 
 Inputs
 ------
-  BASE_DIR/RAW/worldbank_indicators.csv          (from fetch_worldbank_indicators.py)
-  BASE_DIR/web/health_accessibility/
+  <BASE_DIR>/RAW/worldbank_indicators.csv          (precomputed indicator table)
+  <BASE_DIR>/web/health_accessibility/
     country_accessibility_summary.csv
 
-Outputs → BASE_DIR/web/network_results/structural_correlation/
+Outputs → <BASE_DIR>/web/network_results/structural_correlation/
   structural_correlation_matrix.csv    Spearman ρ and p-values (8 pairs)
   structural_scatter_panel.png         2×4 scatter subplots
   bubble_gdp_pwmtt.png                 GDP × PWMTT × delta bubble chart
 
 Usage
 -----
-  python web/structural_correlation.py
-  python web/structural_correlation.py --base /path/to/africa_pavement
+  python result2/structural_correlation.py --base <BASE_DIR>
 """
 
 import argparse
@@ -49,7 +48,7 @@ from scipy.stats import spearmanr
 
 warnings.filterwarnings("ignore")
 
-_DEFAULT_BASE = Path("path/to")
+_DEFAULT_BASE = Path("path/to/base")
 
 # World Bank indicators to test (column name → display label)
 WB_INDICATORS = {
@@ -92,7 +91,7 @@ def load_data(base: Path) -> pd.DataFrame:
     if not wb_path.exists():
         raise FileNotFoundError(
             f"{wb_path} not found.\n"
-            "Run: python data_procession/fetch_worldbank_indicators.py"
+            "Prepare <BASE_DIR>/RAW/worldbank_indicators.csv before running this analysis."
         )
 
     wb = pd.read_csv(wb_path)

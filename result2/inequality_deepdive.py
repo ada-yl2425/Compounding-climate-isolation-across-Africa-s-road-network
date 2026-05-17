@@ -20,17 +20,16 @@ Panel B — Gini change (delta_gini)
 
 Inputs
 ------
-  BASE_DIR/web/health_accessibility/country_accessibility_summary.csv
+  <BASE_DIR>/web/health_accessibility/country_accessibility_summary.csv
 
-Outputs → BASE_DIR/web/network_results/inequality_deepdive/
+Outputs → <BASE_DIR>/web/network_results/inequality_deepdive/
   tail_amplification.png     p90 vs p50 delta scatter (Panel A)
   gini_change.png            gini_normal vs delta_gini + bar chart (Panel B)
   inequality_stats.csv       key numbers used in both panels
 
 Usage
 -----
-  python web/inequality_deepdive.py
-  python web/inequality_deepdive.py --base /path/to/africa_pavement
+  python result2/inequality_deepdive.py --base <BASE_DIR>
 """
 
 import argparse
@@ -46,7 +45,7 @@ from scipy.stats import spearmanr
 
 warnings.filterwarnings("ignore")
 
-_DEFAULT_BASE = Path("path/to")
+_DEFAULT_BASE = Path("path/to/base")
 
 LABEL_COUNTRIES = {
     "Kenya",

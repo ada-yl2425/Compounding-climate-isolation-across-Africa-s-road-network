@@ -19,16 +19,15 @@ Figure 2 — double_vulnerability.png  (Section 5.2 / 6.3)
 
 Inputs
 ------
-  BASE_DIR/web/health_accessibility/country_accessibility_summary.csv
+  <BASE_DIR>/web/health_accessibility/country_accessibility_summary.csv
 
-Outputs → BASE_DIR/web/network_results/isochrone_analysis/
+Outputs → <BASE_DIR>/web/network_results/isochrone_analysis/
   isochrone_coverage.png
   double_vulnerability.png
 
 Usage
 -----
-  python web/isochrone_analysis.py
-  python web/isochrone_analysis.py --base /path/to/africa_pavement
+  python result2/isochrone_analysis.py --base <BASE_DIR>
 """
 
 import argparse
@@ -44,7 +43,7 @@ from scipy.stats import spearmanr
 
 warnings.filterwarnings("ignore")
 
-_DEFAULT_BASE = Path("path/to")
+_DEFAULT_BASE = Path("path/to/base")
 
 THRESHOLDS = [30, 60, 120, 240]
 THRESH_LABELS = ["30 min", "1 hour", "2 hours", "4 hours"]

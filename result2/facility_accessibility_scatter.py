@@ -34,18 +34,17 @@ Falls back to the network-captured population if WB data unavailable.
 
 Inputs
 ------
-  BASE_DIR/RAW/worldbank_indicators.csv          (from fetch_worldbank_indicators.py)
-  BASE_DIR/web/health_accessibility/
+  <BASE_DIR>/RAW/worldbank_indicators.csv          (precomputed indicator table)
+  <BASE_DIR>/web/health_accessibility/
     country_accessibility_summary.csv
 
-Outputs → BASE_DIR/web/network_results/facility_accessibility/
+Outputs → <BASE_DIR>/web/network_results/facility_accessibility/
   facility_density_scatter.png      main 1×2 scatter figure
   quadrant_summary.csv              four-quadrant statistics
 
 Usage
 -----
-  python web/facility_accessibility_scatter.py
-  python web/facility_accessibility_scatter.py --base /path/to/africa_pavement
+  python result2/facility_accessibility_scatter.py --base <BASE_DIR>
 """
 
 import argparse
@@ -61,7 +60,7 @@ from scipy.stats import spearmanr
 
 warnings.filterwarnings("ignore")
 
-_DEFAULT_BASE = Path("path/to")
+_DEFAULT_BASE = Path("path/to/base")
 
 LABEL_COUNTRIES = {
     "Somalia",

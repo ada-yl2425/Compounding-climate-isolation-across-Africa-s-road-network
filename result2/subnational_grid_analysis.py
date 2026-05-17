@@ -33,10 +33,10 @@ Analysis
 
 Inputs
 ------
-  BASE_DIR/web/health_accessibility/node_accessibility_{country}.csv
-  BASE_DIR/RAW/Health_data/{country}_health.csv
+  <BASE_DIR>/web/health_accessibility/node_accessibility_{country}.csv
+  <BASE_DIR>/RAW/Health_data/{country}_health.csv
 
-Outputs → BASE_DIR/web/network_results/subnational_grid/
+Outputs → <BASE_DIR>/web/network_results/subnational_grid/
   grid_cells.csv                all grid cells with computed metrics
   grid_correlation_table.csv    Spearman ρ table
   grid_scatter.png              2-panel scatter
@@ -44,9 +44,8 @@ Outputs → BASE_DIR/web/network_results/subnational_grid/
 
 Usage
 -----
-  python web/subnational_grid_analysis.py
-  python web/subnational_grid_analysis.py --base /path/to/africa_pavement
-  python web/subnational_grid_analysis.py --grid-deg 1.0   # coarser grid
+  python result2/subnational_grid_analysis.py --base <BASE_DIR>
+  python result2/subnational_grid_analysis.py --base <BASE_DIR> --grid-deg 1.0
 """
 
 import argparse
@@ -63,7 +62,7 @@ import statsmodels.api as sm
 
 warnings.filterwarnings("ignore")
 
-_DEFAULT_BASE = Path("path/to")
+_DEFAULT_BASE = Path("path/to/base")
 
 # Minimum population per grid cell to include in analysis
 POP_MIN = 1_000
