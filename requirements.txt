@@ -4,11 +4,27 @@
 # Fundamental packages for tabular data manipulation and scientific computing.
 numpy>=1.24.0
 pandas>=2.0.0
+scipy>=1.10.0
+
+# ==========================================
+# Geospatial Processing
+# ==========================================
+# Required for road, city, and administrative-boundary shapefile processing.
+geopandas>=0.14.0
+
+# ==========================================
+# Climate Data Processing
+# ==========================================
+# Required for CORDEX NetCDF loading and multi-file climate arrays.
+dask>=2023.0.0
+h5netcdf>=1.2.0
+xarray>=2023.0.0
+tqdm>=4.66.0
 
 # ==========================================
 # Utility & Network API
 # ==========================================
-# Required for automated data acquisition and API interactions (e.g., Figshare).
+# Required for automated data acquisition and API interactions.
 requests>=2.31.0
 
 # ==========================================
