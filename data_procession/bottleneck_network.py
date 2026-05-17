@@ -1,14 +1,14 @@
 """
-bottleneck_network.py  —  Steps 1–7
+bottleneck_network.py
 
 Builds the pan-African road network, computes NI/CV/bottleneck scores,
 and serialises the experiment state for the paving simulation.
 
 Usage:
-    python web/bottleneck_network.py --base /path/to/africa_pavement
-    python web/bottleneck_network.py --base /path/to/africa_pavement --rebuild
+    python data_procession/bottleneck_network.py --base <BASE_DIR>
+    python data_procession/bottleneck_network.py --base <BASE_DIR> --rebuild
 
-Outputs (all under BASE/web/network_results/bottleneck_paving/):
+Outputs (all under <BASE_DIR>/web/network_results/bottleneck_paving/):
     01_graph_checkpoint.pkl   — cached pan-African NetworkX graph
     02_edge_scores.csv        — per-edge NI, CV, bottleneck scores
     03_2x2_matrix.csv         — four-quadrant summary
@@ -39,7 +39,7 @@ from scipy.spatial import cKDTree
 warnings.filterwarnings("ignore")
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
-_DEFAULT_BASE = Path("path/to/africa_pavement")
+_DEFAULT_BASE = Path("<BASE_DIR>")
 
 # ── Road network ──────────────────────────────────────────────────────────────
 MIN_ROAD_LENGTH_KM = 0.1
@@ -718,7 +718,7 @@ def main():
     with open(out_dir / "network_stats.json", "w") as f:
         json.dump(stats, f, indent=2)
     print("  Saved → network_stats.json")
-    print("\n  Done. Run ABtest/paving_experiment.py next.")
+    print("\n  Done. Run result3/paving_experiment.py next.")
 
 
 if __name__ == "__main__":

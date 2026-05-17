@@ -3,7 +3,7 @@ future_road_speed.py
 ====================
 Generates future road speed CSVs for robustness checks on bottleneck stability.
 
-Mirrors the logic of compute_road_speed.py (web_1) but for a configurable
+Mirrors the logic of data_procession/compute_road_speed.py but for a configurable
 future year window instead of the 2011-2020 baseline.
 
 Logic:
@@ -15,17 +15,17 @@ Logic:
 
 Usage:
     python data_procession/future_road_speed.py \\
-        --base-dir /path/to/africa_pavement \\
+        --base-dir <BASE_DIR> \\
         --gcm MPI-M-MPI-ESM-LR \\
         --rcp rcp26 \\
         --period 2040 \\
         --window 5
 
 Outputs:
-    {base}/road_speed_future/{gcm}_{rcp}_{period}/{Country}_road_speed.csv
+    <BASE_DIR>/road_speed_future/{gcm}_{rcp}_{period}/{Country}_road_speed.csv
 
-NOTE: NC files must be accessible on the local filesystem.  Google Drive
-mount files sometimes return OSError; download them first if that happens.
+NOTE: NC files must be accessible on the local filesystem. Remote-mounted
+files can return OSError; download them first if that happens.
 Available GCM/RCP combos in 气象数据raw/:
     MIROC-MIROC5  rcp26 / rcp45 / rcp85
     MPI-M-MPI-ESM-LR  rcp26 / rcp45 / rcp85
@@ -49,7 +49,7 @@ warnings.filterwarnings("ignore")
 # =============================================================================
 # DEFAULTS — override with --base-dir and --gcm / --rcp / --period / --window
 # =============================================================================
-_DEFAULT_BASE = Path("path/to/your/base/directory")
+_DEFAULT_BASE = Path("<BASE_DIR>")
 RCM = "SMHI-RCA4"
 
 # HDM-4 constants (same as compute_road_speed.py)
