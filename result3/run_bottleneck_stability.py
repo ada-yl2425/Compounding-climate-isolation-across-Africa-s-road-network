@@ -12,10 +12,10 @@ The 9 combinations (3 RCPs × 3 periods) cover:
   Periods   : 2040 (near), 2060 (mid), 2080 (far)
 
 Usage:
-    python ABtest/run_bottleneck_stability.py \\
-        --base-dir /path/to/africa_pavement \\
+    python result3/run_bottleneck_stability.py \\
+        --base-dir <BASE_DIR> \\
         --gcm MPI-M-MPI-ESM-LR \\
-        [--climate-dir ~/Desktop]  # override NC file location
+        [--climate-dir <CLIMATE_DIR>]  # override NC file location
         [--skip-speed-gen]         # skip Step 1 if CSVs already exist
         [--top-k 500]
 
@@ -103,7 +103,10 @@ def main():
     )
     if not edge_scores.exists():
         print(f"\n[ERROR] Edge scores not found: {edge_scores}")
-        print("  Run bottleneck_network.py first to generate 02_edge_scores.csv")
+        print(
+            "  Run data_procession/bottleneck_network.py first to generate "
+            "02_edge_scores.csv"
+        )
         sys.exit(1)
 
     # ── Step 1: Generate future road speeds ───────────────────────────────────

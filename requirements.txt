@@ -12,6 +12,7 @@ scipy>=1.10.0
 # Required for road, city, and administrative-boundary shapefile processing.
 geopandas>=0.14.0
 rasterio>=1.3.0
+shapely>=2.0.0
 
 # ==========================================
 # Climate Data Processing

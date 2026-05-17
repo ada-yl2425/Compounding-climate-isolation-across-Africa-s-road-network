@@ -1,17 +1,17 @@
 """
 paving_experiment.py  —  Step 8: Paving Simulation
 
-Loads the serialised network state produced by web/bottleneck_network.py
+Loads the serialised network state produced by data_procession/bottleneck_network.py
 and runs the four-strategy paving experiment.
 
 Usage:
-    python ABtest/paving_experiment.py --base /path/to/africa_pavement
+    python result3/paving_experiment.py --base <BASE_DIR>
 
 Input:
-    BASE/web/network_results/bottleneck_paving/experiment_state.pkl
+    <BASE_DIR>/web/network_results/bottleneck_paving/experiment_state.pkl
 
 Output:
-    BASE/web/network_results/bottleneck_paving/04_paving_experiment.csv
+    <BASE_DIR>/web/network_results/bottleneck_paving/04_paving_experiment.csv
 """
 
 import argparse
@@ -165,7 +165,8 @@ def main():
     if not state_path.exists():
         raise FileNotFoundError(
             f"{state_path} not found.\n"
-            "Run web/bottleneck_network.py first to generate experiment_state.pkl."
+            "Run data_procession/bottleneck_network.py first to generate "
+            "experiment_state.pkl."
         )
 
     print(f"  Loading experiment state from {state_path.name} …")

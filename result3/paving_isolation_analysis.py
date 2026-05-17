@@ -4,16 +4,16 @@ paving_isolation_analysis.py — Result 3 De-isolation Supplement
 Computes climate isolation quantity and spatial recovery from targeted paving
 at f=5%, loading existing pkl files (no network rebuild required).
 
-Inputs (under BASE/web/network_results/bottleneck_paving/):
+Inputs (under <BASE_DIR>/web/network_results/bottleneck_paving/):
     experiment_state.pkl    — graphs, city indices, bottleneck/unpaved arrays
     01_graph_checkpoint.pkl — node coordinates (all_nc)
 
-Outputs (under .../bottleneck_paving/deisolation/):
-    R3_isolation_quantity.csv — Result 1: pair / population counts before & after
-    R3_od_deisolation.csv     — Result 2: per-OD spatial data for mapping
-    R3_country_summary.csv    — Result 2: country-level aggregation
-    R3_region_summary.csv     — Result 2: hotspot-belt aggregation
-    R3_deisolation_map.png    — Result 2: spatial figure
+Outputs (under <BASE_DIR>/web/network_results/bottleneck_paving/deisolation/):
+    R3_isolation_quantity.csv — pair / population counts before & after paving
+    R3_od_deisolation.csv     — per-OD spatial data for mapping
+    R3_country_summary.csv    — country-level recovery aggregation
+    R3_region_summary.csv     — hotspot-belt recovery aggregation
+    R3_deisolation_map.png    — spatial de-isolation figure
 
 Isolation thresholds (OD-pair level, same CV definition as edge level):
     Severe  : CV_OD > 0.5  (extreme travel time ≥ 1.5× normal)
@@ -25,7 +25,7 @@ Near-neighbor reachability:
     "isolated", those that regain ≥ 1 neighbour after paving are "de-isolated".
 
 Usage:
-    python ABtest/paving_isolation_analysis.py --base /path/to/africa_pavement
+    python result3/paving_isolation_analysis.py --base <BASE_DIR>
 """
 
 import argparse

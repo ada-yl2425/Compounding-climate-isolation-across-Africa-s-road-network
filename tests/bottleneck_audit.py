@@ -5,7 +5,7 @@ Checks that all required input files exist for every country before
 the expensive network-building step.
 
 Usage:
-    python data_procession/bottleneck_audit.py --base /path/to/africa_pavement
+    python tests/bottleneck_audit.py --base <BASE_DIR>
 """
 
 import argparse

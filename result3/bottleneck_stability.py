@@ -30,17 +30,17 @@ Spatial matching
   Unmatched edges retain their baseline CV (conservative assumption).
 
 Usage:
-    python data_procession/bottleneck_stability.py \\
-        --base-dir /path/to/africa_pavement \\
-        --edge-scores /path/to/02_edge_scores.csv \\
+    python result3/bottleneck_stability.py \\
+        --base-dir <BASE_DIR> \\
+        --edge-scores <EDGE_SCORES_CSV> \\
         --scenarios rcp26 rcp45 rcp85 \\
         --periods 2040 2060 2080 \\
         --gcm MPI-M-MPI-ESM-LR \\
         --top-k 500
 
 Output:
-    {base}/web/network_results/bottleneck_paving/bottleneck_stability_report.csv
-    {base}/web/network_results/bottleneck_paving/bottleneck_stability_{scenario}_{period}.csv
+    <BASE_DIR>/web/network_results/bottleneck_paving/bottleneck_stability_report.csv
+    <BASE_DIR>/web/network_results/bottleneck_paving/bottleneck_stability_{scenario}_{period}.csv
 """
 
 import argparse
