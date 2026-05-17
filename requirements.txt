@@ -14,6 +14,19 @@ geopandas>=0.14.0
 igraph>=0.11.0
 networkx>=3.0
 scikit-learn>=1.3.0
+# Geospatial Processing
+# ==========================================
+# Required for road, city, and administrative-boundary shapefile processing.
+geopandas>=0.14.0
+
+# ==========================================
+# Climate Data Processing
+# ==========================================
+# Required for CORDEX NetCDF loading and multi-file climate arrays.
+dask>=2023.0.0
+h5netcdf>=1.2.0
+xarray>=2023.0.0
+tqdm>=4.66.0
 
 # ==========================================
 # Utility & Network API
