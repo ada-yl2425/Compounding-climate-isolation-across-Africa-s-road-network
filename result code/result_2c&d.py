@@ -15,27 +15,24 @@ import pandas as pd
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.lines import Line2D
 
-
-OUTPUT_DIR = Path(
-    "/Users/suhang/Downloads/同步空间/工作文件/0-1博后论文/4.非洲路网可达性/插图绘制/result 2.3"
-)
+OUTPUT_DIR = Path("<FIGURE_OUTPUT_ROOT>/result 2.3")
 PANEL_A_CSV = Path(
-    "/Users/suhang/Downloads/同步空间/工作文件/0-1博后论文/4.非洲路网可达性/过程文件/result/result2/finding4_OLS_regression_facility_popdensity_vs_climate_impact/grid_cells_pw_delta_t_facility_popdensity.csv"
+    "<PROJECT_WORK_ROOT>/result/result2/finding4_OLS_regression_facility_popdensity_vs_climate_impact/grid_cells_pw_delta_t_facility_popdensity.csv"
 )
 PANEL_A_SPEARMAN_CSV = Path(
-    "/Users/suhang/Downloads/同步空间/工作文件/0-1博后论文/4.非洲路网可达性/过程文件/result/result2/finding4_OLS_regression_facility_popdensity_vs_climate_impact/grid_spearman_correlation_table.csv"
+    "<PROJECT_WORK_ROOT>/result/result2/finding4_OLS_regression_facility_popdensity_vs_climate_impact/grid_spearman_correlation_table.csv"
 )
 PANEL_A_OLS_TXT = Path(
-    "/Users/suhang/Downloads/同步空间/工作文件/0-1博后论文/4.非洲路网可达性/过程文件/result/result2/finding4_OLS_regression_facility_popdensity_vs_climate_impact/OLS_regression_result_summary.txt"
+    "<PROJECT_WORK_ROOT>/result/result2/finding4_OLS_regression_facility_popdensity_vs_climate_impact/OLS_regression_result_summary.txt"
 )
 PANEL_B_GINI_CSV = Path(
-    "/Users/suhang/Downloads/同步空间/工作文件/0-1博后论文/4.非洲路网可达性/过程文件/result/result2/finding5_gini_inequality_country_ranking/country_gini_normal_extreme_delta.csv"
+    "<PROJECT_WORK_ROOT>/result/result2/finding5_gini_inequality_country_ranking/country_gini_normal_extreme_delta.csv"
 )
 PANEL_B_RAW_CSV = Path(
-    "/Users/suhang/Downloads/同步空间/工作文件/0-1博后论文/4.非洲路网可达性/过程文件/result/result2/finding5_gini_inequality_country_ranking/country_facility_population_accessibility_raw.csv"
+    "<PROJECT_WORK_ROOT>/result/result2/finding5_gini_inequality_country_ranking/country_facility_population_accessibility_raw.csv"
 )
 PANEL_B_QUADRANT_CSV = Path(
-    "/Users/suhang/Downloads/同步空间/工作文件/0-1博后论文/4.非洲路网可达性/过程文件/result/result2/finding5_gini_inequality_country_ranking/country_facility_density_quadrant_classification.csv"
+    "<PROJECT_WORK_ROOT>/result/result2/finding5_gini_inequality_country_ranking/country_facility_density_quadrant_classification.csv"
 )
 
 FIGURE_STEM = "result2_3_sparse_facility_population_climate_impact"
@@ -43,7 +40,9 @@ PNG_PATH = OUTPUT_DIR / f"{FIGURE_STEM}.png"
 PDF_PATH = OUTPUT_DIR / f"{FIGURE_STEM}.pdf"
 LOG_PATH = OUTPUT_DIR / f"{FIGURE_STEM}_diagnostics.txt"
 JOIN_CHECK_PATH = OUTPUT_DIR / f"{FIGURE_STEM}_panel_b_plot_data.csv"
-PANEL_A_MODEL_CHECK_PATH = OUTPUT_DIR / f"{FIGURE_STEM}_panel_a_model_reconstruction.csv"
+PANEL_A_MODEL_CHECK_PATH = (
+    OUTPUT_DIR / f"{FIGURE_STEM}_panel_a_model_reconstruction.csv"
+)
 PANEL_A_6CM_PNG_PATH = OUTPUT_DIR / f"{FIGURE_STEM}_panel_a_6cm.png"
 PANEL_A_6CM_PDF_PATH = OUTPUT_DIR / f"{FIGURE_STEM}_panel_a_6cm.pdf"
 PANEL_B_6CM_PNG_PATH = OUTPUT_DIR / f"{FIGURE_STEM}_panel_b_6cm.png"
@@ -130,14 +129,18 @@ def format_transform_range(series: pd.Series, transform: str) -> str:
 def transform_series(series: pd.Series, transform: str) -> pd.Series:
     if transform == "log":
         if (series <= 0).any():
-            raise ValueError(f"Cannot apply log transform to non-positive values in {series.name}")
+            raise ValueError(
+                f"Cannot apply log transform to non-positive values in {series.name}"
+            )
         return np.log(series)
     if transform == "log1p":
         return np.log1p(series)
     raise ValueError(f"Unsupported transform: {transform}")
 
 
-def solve_ols(target: np.ndarray, x1: np.ndarray, x2: np.ndarray) -> tuple[np.ndarray, float]:
+def solve_ols(
+    target: np.ndarray, x1: np.ndarray, x2: np.ndarray
+) -> tuple[np.ndarray, float]:
     X = np.column_stack([np.ones(len(target)), x1, x2])
     beta, _, _, _ = np.linalg.lstsq(X, target, rcond=None)
     fitted = X @ beta
@@ -151,7 +154,9 @@ def parse_ols_summary(summary_text: str) -> dict[str, float | str]:
     r2_match = re.search(r"R-squared:\s+([0-9.]+)", summary_text)
     n_match = re.search(r"No\. Observations:\s+(\d+)", summary_text)
     if not r2_match or not n_match:
-        raise ValueError("Could not parse R-squared or sample size from OLS summary text.")
+        raise ValueError(
+            "Could not parse R-squared or sample size from OLS summary text."
+        )
 
     coef_matches = re.findall(
         r"^(const|log_facility|log_pop_density)\s+(-?\d+\.\d+)\s+\d+\.\d+\s+-?\d+\.\d+\s+([0-9.]+)",
@@ -164,7 +169,9 @@ def parse_ols_summary(summary_text: str) -> dict[str, float | str]:
         coef_dict[name] = float(coef)
         pval_dict[name] = float(pval)
     if {"const", "log_facility", "log_pop_density"} - set(coef_dict):
-        raise ValueError("Could not parse all required coefficients from OLS summary text.")
+        raise ValueError(
+            "Could not parse all required coefficients from OLS summary text."
+        )
 
     first_line = summary_text.splitlines()[0].strip()
     return {
@@ -211,13 +218,21 @@ def evaluate_panel_a_candidates(
                     valid &= y_raw.notna()
                 valid &= grid_df[PANEL_A_TARGET].notna()
 
-                df_valid = grid_df.loc[valid, [PANEL_A_TARGET, PANEL_A_FACILITY_FIELD, population_field]].copy()
+                df_valid = grid_df.loc[
+                    valid, [PANEL_A_TARGET, PANEL_A_FACILITY_FIELD, population_field]
+                ].copy()
                 if len(df_valid) < 20:
                     continue
 
-                x = transform_series(df_valid[PANEL_A_FACILITY_FIELD], facility_transform).to_numpy(dtype=float)
-                y = transform_series(df_valid[population_field], population_transform).to_numpy(dtype=float)
-                beta, r_squared = solve_ols(df_valid[PANEL_A_TARGET].to_numpy(dtype=float), x, y)
+                x = transform_series(
+                    df_valid[PANEL_A_FACILITY_FIELD], facility_transform
+                ).to_numpy(dtype=float)
+                y = transform_series(
+                    df_valid[population_field], population_transform
+                ).to_numpy(dtype=float)
+                beta, r_squared = solve_ols(
+                    df_valid[PANEL_A_TARGET].to_numpy(dtype=float), x, y
+                )
                 candidates.append(
                     {
                         "facility_field": PANEL_A_FACILITY_FIELD,
@@ -239,14 +254,22 @@ def evaluate_panel_a_candidates(
                     }
                 )
 
-    candidate_df = pd.DataFrame(candidates).sort_values("distance_to_summary").reset_index(drop=True)
+    candidate_df = (
+        pd.DataFrame(candidates)
+        .sort_values("distance_to_summary")
+        .reset_index(drop=True)
+    )
     return candidate_df
 
 
 def expand_quadrant_mapping(quadrant_df: pd.DataFrame) -> pd.DataFrame:
     expanded_rows: list[dict[str, str]] = []
     for _, row in quadrant_df.iterrows():
-        countries = [country.strip() for country in str(row["countries"]).split(",") if country.strip()]
+        countries = [
+            country.strip()
+            for country in str(row["countries"]).split(",")
+            if country.strip()
+        ]
         for country in countries:
             expanded_rows.append({"country": country, "quadrant": row["quadrant"]})
     expanded = pd.DataFrame(expanded_rows)
@@ -258,10 +281,16 @@ def prettify_country(country: str) -> str:
     return COUNTRY_DISPLAY_MAP.get(country, country)
 
 
-def boxes_overlap(box_a: tuple[float, float, float, float], box_b: tuple[float, float, float, float], pad: float = 0.0) -> bool:
+def boxes_overlap(
+    box_a: tuple[float, float, float, float],
+    box_b: tuple[float, float, float, float],
+    pad: float = 0.0,
+) -> bool:
     ax0, ay0, ax1, ay1 = box_a
     bx0, by0, bx1, by1 = box_b
-    return not (ax1 + pad < bx0 or bx1 + pad < ax0 or ay1 + pad < by0 or by1 + pad < ay0)
+    return not (
+        ax1 + pad < bx0 or bx1 + pad < ax0 or ay1 + pad < by0 or by1 + pad < ay0
+    )
 
 
 def estimate_text_bbox(
@@ -291,7 +320,9 @@ def place_country_labels(
     renderer = fig.canvas.get_renderer()
     axes_bbox = ax.get_window_extent(renderer=renderer)
     all_points = ax.transData.transform(
-        np.column_stack([panel_b_df[PANEL_B_BASELINE_FIELD], panel_b_df[PANEL_B_DELTA_GINI_FIELD]])
+        np.column_stack(
+            [panel_b_df[PANEL_B_BASELINE_FIELD], panel_b_df[PANEL_B_DELTA_GINI_FIELD]]
+        )
     )
     point_index = {country: idx for idx, country in enumerate(panel_b_df["country"])}
     occupied_boxes: list[tuple[float, float, float, float]] = []
@@ -319,24 +350,36 @@ def place_country_labels(
         probe.remove()
         text_width = bbox.width + 6.0
         text_height = bbox.height + 4.0
-        point_disp = ax.transData.transform((row[PANEL_B_BASELINE_FIELD], row[PANEL_B_DELTA_GINI_FIELD]))
+        point_disp = ax.transData.transform(
+            (row[PANEL_B_BASELINE_FIELD], row[PANEL_B_DELTA_GINI_FIELD])
+        )
         current_idx = point_index[row["country"]]
         row_offsets = list(candidate_offsets)
         if row["country"] == "Sudan":
             row_offsets = [(-88, 6), (-88, -8), (-104, 12), (-104, -12)] + row_offsets
         elif row[PANEL_B_BASELINE_FIELD] > 1.5:
-            row_offsets = [(-30, 10), (-30, -10), (-46, 0), (-56, 14), (-56, -14)] + row_offsets
+            row_offsets = [
+                (-30, 10),
+                (-30, -10),
+                (-46, 0),
+                (-56, 14),
+                (-56, -14),
+            ] + row_offsets
         elif row[PANEL_B_BASELINE_FIELD] < 0.35:
             positive_offsets = [offset for offset in row_offsets if offset[0] >= 0]
             negative_offsets = [offset for offset in row_offsets if offset[0] < 0]
             row_offsets = positive_offsets + negative_offsets
 
-        best_choice: tuple[float, float, float, str, tuple[float, float, float, float]] | None = None
+        best_choice: (
+            tuple[float, float, float, str, tuple[float, float, float, float]] | None
+        ) = None
         for dx, dy in row_offsets:
             ha = "left" if dx >= 0 else "right"
             anchor_x = point_disp[0] + dx
             anchor_y = point_disp[1] + dy
-            candidate_box = estimate_text_bbox(anchor_x, anchor_y, text_width, text_height, ha)
+            candidate_box = estimate_text_bbox(
+                anchor_x, anchor_y, text_width, text_height, ha
+            )
             penalty = np.hypot(dx, dy) * 0.02
 
             if (
@@ -364,7 +407,15 @@ def place_country_labels(
                 best_choice = (penalty, dx, dy, ha, candidate_box)
 
         if best_choice is None:
-            best_choice = (0.0, 78.0, 0.0, "left", estimate_text_bbox(point_disp[0] + 78, point_disp[1], text_width, text_height, "left"))
+            best_choice = (
+                0.0,
+                78.0,
+                0.0,
+                "left",
+                estimate_text_bbox(
+                    point_disp[0] + 78, point_disp[1], text_width, text_height, "left"
+                ),
+            )
 
         _, dx, dy, ha, chosen_box = best_choice
         occupied_boxes.append(chosen_box)
@@ -377,11 +428,19 @@ def place_country_labels(
             va="center",
             fontsize=fontsize,
             color="#222222",
-            arrowprops={"arrowstyle": "-", "color": "#6F6F6F", "linewidth": 0.7, "shrinkA": 2, "shrinkB": 4},
+            arrowprops={
+                "arrowstyle": "-",
+                "color": "#6F6F6F",
+                "linewidth": 0.7,
+                "shrinkA": 2,
+                "shrinkB": 4,
+            },
             zorder=4,
             clip_on=False,
         )
-        annotation.set_path_effects([pe.withStroke(linewidth=2.8, foreground="white", alpha=0.92)])
+        annotation.set_path_effects(
+            [pe.withStroke(linewidth=2.8, foreground="white", alpha=0.92)]
+        )
 
 
 def apply_square_style() -> None:
@@ -405,7 +464,9 @@ def apply_square_style() -> None:
     )
 
 
-def prepare_panel_a(lines: list[str]) -> tuple[pd.DataFrame, dict[str, float | str], pd.DataFrame]:
+def prepare_panel_a(
+    lines: list[str],
+) -> tuple[pd.DataFrame, dict[str, float | str], pd.DataFrame]:
     grid_df = pd.read_csv(PANEL_A_CSV)
     spearman_df = pd.read_csv(PANEL_A_SPEARMAN_CSV)
     ols_summary_text = PANEL_A_OLS_TXT.read_text(encoding="utf-8")
@@ -427,9 +488,15 @@ def prepare_panel_a(lines: list[str]) -> tuple[pd.DataFrame, dict[str, float | s
     ].iloc[0]
 
     log_line(lines, "Panel A checks")
-    log_line(lines, f"1) grid_cells_pw_delta_t_facility_popdensity.csv columns: {list(grid_df.columns)}")
+    log_line(
+        lines,
+        f"1) grid_cells_pw_delta_t_facility_popdensity.csv columns: {list(grid_df.columns)}",
+    )
     log_line(lines, f"2) Sample size n: {len(grid_df)}")
-    log_line(lines, f"3) Climate-shock field: '{PANEL_A_TARGET}', range = {format_range(target_series)}")
+    log_line(
+        lines,
+        f"3) Climate-shock field: '{PANEL_A_TARGET}', range = {format_range(target_series)}",
+    )
     log_line(
         lines,
         "4) Facility-density field: "
@@ -473,7 +540,9 @@ def prepare_panel_a(lines: list[str]) -> tuple[pd.DataFrame, dict[str, float | s
         f"R² = {best_candidate['r_squared']:.3f}, "
         f"n = {int(best_candidate['n'])}.",
     )
-    node_match = spearman_df.loc[spearman_df["x"] == PANEL_A_NODE_FIELD, "label"].tolist()
+    node_match = spearman_df.loc[
+        spearman_df["x"] == PANEL_A_NODE_FIELD, "label"
+    ].tolist()
     log_line(
         lines,
         "8) Naming mismatch detected: the CSV does not contain a 'pop_density' field. "
@@ -516,26 +585,49 @@ def prepare_panel_b(lines: list[str]) -> tuple[pd.DataFrame, pd.DataFrame]:
     raw_only = sorted(joined.loc[joined["_merge"] == "right_only", "country"].tolist())
 
     matched = joined.loc[joined["_merge"] == "both"].copy()
-    matched["baseline_diff"] = matched[f"{PANEL_B_BASELINE_FIELD}_gini"] - matched[f"{PANEL_B_BASELINE_FIELD}_raw"]
-    matched["delta_gini_diff"] = matched[f"{PANEL_B_DELTA_GINI_FIELD}_gini"] - matched[f"{PANEL_B_DELTA_GINI_FIELD}_raw"]
+    matched["baseline_diff"] = (
+        matched[f"{PANEL_B_BASELINE_FIELD}_gini"]
+        - matched[f"{PANEL_B_BASELINE_FIELD}_raw"]
+    )
+    matched["delta_gini_diff"] = (
+        matched[f"{PANEL_B_DELTA_GINI_FIELD}_gini"]
+        - matched[f"{PANEL_B_DELTA_GINI_FIELD}_raw"]
+    )
 
     plot_df = gini_df.merge(quadrant_expanded, on="country", how="left")
-    unmatched_quadrant = sorted(plot_df.loc[plot_df["quadrant"].isna(), "country"].tolist())
-    extra_quadrant_countries = sorted(set(quadrant_expanded["country"]) - set(gini_df["country"]))
+    unmatched_quadrant = sorted(
+        plot_df.loc[plot_df["quadrant"].isna(), "country"].tolist()
+    )
+    extra_quadrant_countries = sorted(
+        set(quadrant_expanded["country"]) - set(gini_df["country"])
+    )
 
     if unmatched_quadrant:
-        raise ValueError(f"Countries missing quadrant classifications: {unmatched_quadrant}")
+        raise ValueError(
+            f"Countries missing quadrant classifications: {unmatched_quadrant}"
+        )
 
     plot_df["quadrant_clean"] = pd.Categorical(
         plot_df["quadrant_clean"], categories=QUADRANT_ORDER, ordered=True
     )
-    plot_df = plot_df.sort_values(["quadrant_clean", PANEL_B_BASELINE_FIELD, PANEL_B_DELTA_GINI_FIELD]).reset_index(drop=True)
+    plot_df = plot_df.sort_values(
+        ["quadrant_clean", PANEL_B_BASELINE_FIELD, PANEL_B_DELTA_GINI_FIELD]
+    ).reset_index(drop=True)
     plot_df.to_csv(JOIN_CHECK_PATH, index=False)
 
     log_line(lines, "Panel B checks")
-    log_line(lines, f"9) country_gini_normal_extreme_delta.csv columns: {list(gini_df.columns)}")
-    log_line(lines, f"10) country_facility_population_accessibility_raw.csv columns: {list(raw_df.columns)}")
-    log_line(lines, f"11) country_facility_density_quadrant_classification.csv columns: {list(quadrant_df.columns)}")
+    log_line(
+        lines,
+        f"9) country_gini_normal_extreme_delta.csv columns: {list(gini_df.columns)}",
+    )
+    log_line(
+        lines,
+        f"10) country_facility_population_accessibility_raw.csv columns: {list(raw_df.columns)}",
+    )
+    log_line(
+        lines,
+        f"11) country_facility_density_quadrant_classification.csv columns: {list(quadrant_df.columns)}",
+    )
     log_line(
         lines,
         "12) Join results: "
@@ -579,11 +671,14 @@ def prepare_panel_b(lines: list[str]) -> tuple[pd.DataFrame, pd.DataFrame]:
 def build_panel_a_levels(predicted: pd.Series) -> np.ndarray:
     candidate_levels = np.array([0.00, 0.05, 0.10, 0.15, 0.20, 0.30, 0.40])
     valid_levels = candidate_levels[
-        (candidate_levels >= predicted.min() - 1e-6) & (candidate_levels <= predicted.max() + 1e-6)
+        (candidate_levels >= predicted.min() - 1e-6)
+        & (candidate_levels <= predicted.max() + 1e-6)
     ]
     if len(valid_levels) >= 5:
         return valid_levels
-    return np.round(np.linspace(predicted.quantile(0.08), predicted.quantile(0.92), 6), 2)
+    return np.round(
+        np.linspace(predicted.quantile(0.08), predicted.quantile(0.92), 6), 2
+    )
 
 
 def compute_panel_a_surface_components(
@@ -597,10 +692,14 @@ def compute_panel_a_surface_components(
     const = float(summary_stats["const"])
     beta_fac = float(summary_stats["log_facility"])
     beta_pop = float(summary_stats["log_pop_density"])
-    df["predicted_shock"] = const + beta_fac * df["facility_log"] + beta_pop * df["log_population"]
+    df["predicted_shock"] = (
+        const + beta_fac * df["facility_log"] + beta_pop * df["log_population"]
+    )
 
     x_grid = np.linspace(df["facility_log"].min(), df["facility_log"].max(), grid_size)
-    y_grid = np.linspace(df["log_population"].min(), df["log_population"].max(), grid_size)
+    y_grid = np.linspace(
+        df["log_population"].min(), df["log_population"].max(), grid_size
+    )
     xx, yy = np.meshgrid(x_grid, y_grid)
     zz = const + beta_fac * xx + beta_pop * yy
     contour_levels = build_panel_a_levels(df["predicted_shock"])
@@ -616,7 +715,9 @@ def compute_panel_a_surface_components(
     }
 
 
-def build_panel_a_square(panel_a_df: pd.DataFrame, summary_stats: dict[str, float | str]) -> plt.Figure:
+def build_panel_a_square(
+    panel_a_df: pd.DataFrame, summary_stats: dict[str, float | str]
+) -> plt.Figure:
     apply_square_style()
     fig = plt.figure(figsize=(SQUARE_INCH, SQUARE_INCH), dpi=300)
     ax = fig.add_axes([0.24, 0.20, 0.70, 0.72])
@@ -645,9 +746,13 @@ def build_panel_a_square(panel_a_df: pd.DataFrame, summary_stats: dict[str, floa
         alpha=0.72,
         zorder=1,
     )
-    contour_labels = ax.clabel(contour, inline=True, fmt="%.2f", fontsize=7.4, colors="#A36A39")
+    contour_labels = ax.clabel(
+        contour, inline=True, fmt="%.2f", fontsize=7.4, colors="#A36A39"
+    )
     for label in contour_labels:
-        label.set_path_effects([pe.withStroke(linewidth=1.8, foreground="white", alpha=0.9)])
+        label.set_path_effects(
+            [pe.withStroke(linewidth=1.8, foreground="white", alpha=0.9)]
+        )
 
     ax.set_xlabel("log(1 + facilities/M)", labelpad=2)
     ax.set_ylabel("log(grid-cell population)", labelpad=2)
@@ -708,7 +813,10 @@ def build_panel_b_square(panel_b_df: pd.DataFrame) -> plt.Figure:
     ax.tick_params(length=3, width=0.8)
     ax.grid(color="#D6D6D6", linewidth=0.55, alpha=0.7)
     ax.set_xlim(-0.12, max(2.05, panel_b_df[PANEL_B_BASELINE_FIELD].max() + 0.06))
-    ax.set_ylim(panel_b_df[PANEL_B_DELTA_GINI_FIELD].min() - 0.0015, panel_b_df[PANEL_B_DELTA_GINI_FIELD].max() + 0.003)
+    ax.set_ylim(
+        panel_b_df[PANEL_B_DELTA_GINI_FIELD].min() - 0.0015,
+        panel_b_df[PANEL_B_DELTA_GINI_FIELD].max() + 0.003,
+    )
 
     legend_labels = {
         "Dense facility / short travel": "Dense fac.\nshort travel",
@@ -744,7 +852,11 @@ def build_panel_b_square(panel_b_df: pd.DataFrame) -> plt.Figure:
     return fig
 
 
-def build_figure(panel_a_df: pd.DataFrame, summary_stats: dict[str, float | str], panel_b_df: pd.DataFrame) -> plt.Figure:
+def build_figure(
+    panel_a_df: pd.DataFrame,
+    summary_stats: dict[str, float | str],
+    panel_b_df: pd.DataFrame,
+) -> plt.Figure:
     plt.rcParams.update(
         {
             "font.family": "DejaVu Sans",
@@ -812,7 +924,12 @@ def build_figure(panel_a_df: pd.DataFrame, summary_stats: dict[str, float | str]
         ha="right",
         va="top",
         fontsize=TEXT_FONT,
-        bbox={"boxstyle": "round,pad=0.28", "facecolor": (1, 1, 1, 0.86), "edgecolor": "#C8CDD5", "linewidth": 0.8},
+        bbox={
+            "boxstyle": "round,pad=0.28",
+            "facecolor": (1, 1, 1, 0.86),
+            "edgecolor": "#C8CDD5",
+            "linewidth": 0.8,
+        },
     )
 
     x_median = panel_b_df[PANEL_B_BASELINE_FIELD].median()
@@ -841,13 +958,21 @@ def build_figure(panel_a_df: pd.DataFrame, summary_stats: dict[str, float | str]
         & (panel_b_df[PANEL_B_DELTA_GINI_FIELD] > label_y_threshold)
     ].copy()
     if len(label_pool) < 4:
-        label_pool = panel_b_df[panel_b_df[PANEL_B_DELTA_GINI_FIELD] > panel_b_df[PANEL_B_DELTA_GINI_FIELD].median()].copy()
+        label_pool = panel_b_df[
+            panel_b_df[PANEL_B_DELTA_GINI_FIELD]
+            > panel_b_df[PANEL_B_DELTA_GINI_FIELD].median()
+        ].copy()
     label_pool["label_score"] = (
-        (label_pool[PANEL_B_BASELINE_FIELD] - x_median) / panel_b_df[PANEL_B_BASELINE_FIELD].std()
-        + (label_pool[PANEL_B_DELTA_GINI_FIELD] - y_reference) / panel_b_df[PANEL_B_DELTA_GINI_FIELD].std()
-    )
+        label_pool[PANEL_B_BASELINE_FIELD] - x_median
+    ) / panel_b_df[PANEL_B_BASELINE_FIELD].std() + (
+        label_pool[PANEL_B_DELTA_GINI_FIELD] - y_reference
+    ) / panel_b_df[
+        PANEL_B_DELTA_GINI_FIELD
+    ].std()
     label_df = (
-        label_pool.sort_values([PANEL_B_DELTA_GINI_FIELD, PANEL_B_BASELINE_FIELD], ascending=False)
+        label_pool.sort_values(
+            [PANEL_B_DELTA_GINI_FIELD, PANEL_B_BASELINE_FIELD], ascending=False
+        )
         .head(6)
         .reset_index(drop=True)
     )
@@ -857,7 +982,10 @@ def build_figure(panel_a_df: pd.DataFrame, summary_stats: dict[str, float | str]
     ax_b.set_title("Consequence", loc="left", pad=10)
     ax_b.grid(color="#D6D6D6", linewidth=0.6, alpha=0.7)
     ax_b.set_xlim(-0.1, max(2.08, panel_b_df[PANEL_B_BASELINE_FIELD].max() + 0.12))
-    ax_b.set_ylim(panel_b_df[PANEL_B_DELTA_GINI_FIELD].min() - 0.002, panel_b_df[PANEL_B_DELTA_GINI_FIELD].max() + 0.0035)
+    ax_b.set_ylim(
+        panel_b_df[PANEL_B_DELTA_GINI_FIELD].min() - 0.002,
+        panel_b_df[PANEL_B_DELTA_GINI_FIELD].max() + 0.0035,
+    )
 
     place_country_labels(fig, ax_b, panel_b_df, label_df)
 
@@ -897,8 +1025,12 @@ def build_figure(panel_a_df: pd.DataFrame, summary_stats: dict[str, float | str]
         title_fontsize=TEXT_FONT,
     )
 
-    ax_a.text(-0.13, 1.04, "A", transform=ax_a.transAxes, fontsize=16, fontweight="bold")
-    ax_b.text(-0.13, 1.04, "B", transform=ax_b.transAxes, fontsize=16, fontweight="bold")
+    ax_a.text(
+        -0.13, 1.04, "A", transform=ax_a.transAxes, fontsize=16, fontweight="bold"
+    )
+    ax_b.text(
+        -0.13, 1.04, "B", transform=ax_b.transAxes, fontsize=16, fontweight="bold"
+    )
 
     return fig
 

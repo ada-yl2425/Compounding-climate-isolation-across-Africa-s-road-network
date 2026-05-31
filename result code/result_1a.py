@@ -1,4 +1,4 @@
-#!/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/bin/python3.11
+#!/usr/bin/env python3
 """
 Result 1.1 cross-country accessibility loss map.
 
@@ -8,7 +8,7 @@ This version deliberately focuses only on cross-country accessibility loss:
     - true city coordinates from Natural Earth populated places
 
 Run:
-    /opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/bin/python3.11 result1_1_cross_country_loss_map.py
+    python3 result1_1_cross_country_loss_map.py
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ import re
 import unicodedata
 from pathlib import Path
 
-OUTPUT_DIR = Path("/Users/suhang/Downloads/同步空间/工作文件/0-1博后论文/4.非洲路网可达性/插图绘制/result 1.1")
+OUTPUT_DIR = Path("<FIGURE_OUTPUT_ROOT>/result 1.1")
 os.environ.setdefault("MPLCONFIGDIR", str(OUTPUT_DIR / "_mplconfig"))
 (OUTPUT_DIR / "_mplconfig").mkdir(parents=True, exist_ok=True)
 
@@ -35,9 +35,8 @@ import pandas as pd
 from matplotlib.collections import LineCollection
 from matplotlib.colors import LinearSegmentedColormap, Normalize
 
-
 DATA_DIR = Path(
-    "/Users/suhang/Downloads/同步空间/工作文件/0-1博后论文/4.非洲路网可达性/过程文件/result/result1/"
+    "<PROJECT_WORK_ROOT>/result/result1/"
     "finding1_cross_country_road_degradation_heatmap"
 )
 CITY_SHP = OUTPUT_DIR / "ne_10m_populated_places" / "ne_10m_populated_places.shp"
@@ -55,7 +54,9 @@ FIGSIZE = (9.5 * CM_TO_INCH, 13.0 * CM_TO_INCH)
 DPI = 600
 BASE_FONT_SIZE = 9.5
 COUNTRY_LABEL_SIZE = 7.2
-MAP_CRS = "+proj=aea +lat_1=-18 +lat_2=21 +lat_0=0 +lon_0=20 +datum=WGS84 +units=m +no_defs"
+MAP_CRS = (
+    "+proj=aea +lat_1=-18 +lat_2=21 +lat_0=0 +lon_0=20 +datum=WGS84 +units=m +no_defs"
+)
 
 LINE_VALUE_COL = "increase_pct"
 
@@ -165,7 +166,11 @@ def require_columns(df: pd.DataFrame, cols: list[str], label: str) -> None:
 
 
 def normalize_name(value: str) -> str:
-    text = unicodedata.normalize("NFKD", str(value)).encode("ascii", "ignore").decode("ascii")
+    text = (
+        unicodedata.normalize("NFKD", str(value))
+        .encode("ascii", "ignore")
+        .decode("ascii")
+    )
     text = text.lower().replace("'", "").replace("-", " ")
     text = re.sub(r"\s+", " ", text).strip()
     return text
@@ -173,8 +178,8 @@ def normalize_name(value: str) -> str:
 
 def find_natural_earth_lowres() -> Path:
     candidates = [
-        Path("/opt/homebrew/lib/python3.11/site-packages/pyogrio/tests/fixtures/naturalearth_lowres/naturalearth_lowres.shp"),
-        Path("/usr/local/lib/python3.11/site-packages/pyogrio/tests/fixtures/naturalearth_lowres/naturalearth_lowres.shp"),
+        Path("<PYOGRIO_FIXTURE_ROOT>/naturalearth_lowres/naturalearth_lowres.shp"),
+        Path("<PYOGRIO_FIXTURE_ROOT>/naturalearth_lowres/naturalearth_lowres.shp"),
     ]
     for candidate in candidates:
         if candidate.exists():
@@ -182,7 +187,9 @@ def find_natural_earth_lowres() -> Path:
     raise FileNotFoundError("Local Natural Earth country shapefile not found.")
 
 
-def load_inputs() -> tuple[pd.DataFrame, pd.DataFrame, gpd.GeoDataFrame, gpd.GeoDataFrame]:
+def load_inputs() -> (
+    tuple[pd.DataFrame, pd.DataFrame, gpd.GeoDataFrame, gpd.GeoDataFrame]
+):
     require_files([PAIR_CSV, SUMMARY_CSV, CITY_SHP, find_natural_earth_lowres()])
 
     pairs = pd.read_csv(PAIR_CSV)
@@ -192,13 +199,34 @@ def load_inputs() -> tuple[pd.DataFrame, pd.DataFrame, gpd.GeoDataFrame, gpd.Geo
 
     require_columns(
         pairs,
-        ["city_A", "city_B", "t_normal_h", "t_extreme_h", LINE_VALUE_COL, "conn_type", "severe_increase"],
+        [
+            "city_A",
+            "city_B",
+            "t_normal_h",
+            "t_extreme_h",
+            LINE_VALUE_COL,
+            "conn_type",
+            "severe_increase",
+        ],
         "cross-country pair CSV",
     )
-    require_columns(summary, ["n_city_pairs", "n_connected", "mean_travel_increase_pct"], "summary CSV")
+    require_columns(
+        summary,
+        ["n_city_pairs", "n_connected", "mean_travel_increase_pct"],
+        "summary CSV",
+    )
     require_columns(
         city_points,
-        ["NAME", "NAMEASCII", "ADM0_A3", "ADM0NAME", "LATITUDE", "LONGITUDE", "POP_MAX", "geometry"],
+        [
+            "NAME",
+            "NAMEASCII",
+            "ADM0_A3",
+            "ADM0NAME",
+            "LATITUDE",
+            "LONGITUDE",
+            "POP_MAX",
+            "geometry",
+        ],
         "Natural Earth populated places",
     )
 
@@ -206,7 +234,9 @@ def load_inputs() -> tuple[pd.DataFrame, pd.DataFrame, gpd.GeoDataFrame, gpd.Geo
 
 
 def prepare_links(pairs: pd.DataFrame) -> pd.DataFrame:
-    links = pairs.loc[pairs["conn_type"].eq("connected") & pairs[LINE_VALUE_COL].notna()].copy()
+    links = pairs.loc[
+        pairs["conn_type"].eq("connected") & pairs[LINE_VALUE_COL].notna()
+    ].copy()
     links["iso_A"] = links["city_A"].map(CITY_TO_ISO3)
     links["iso_B"] = links["city_B"].map(CITY_TO_ISO3)
     links["same_country"] = links["iso_A"].eq(links["iso_B"])
@@ -222,18 +252,24 @@ def prepare_links(pairs: pd.DataFrame) -> pd.DataFrame:
     return links
 
 
-def build_city_coordinate_table(links: pd.DataFrame, city_points: gpd.GeoDataFrame) -> pd.DataFrame:
-    unique_city_rows = pd.concat(
-        [
-            links[["city_A", "iso_A", "level_A"]].rename(
-                columns={"city_A": "city", "iso_A": "iso3", "level_A": "level"}
-            ),
-            links[["city_B", "iso_B", "level_B"]].rename(
-                columns={"city_B": "city", "iso_B": "iso3", "level_B": "level"}
-            ),
-        ],
-        ignore_index=True,
-    ).drop_duplicates(subset=["city", "iso3"]).reset_index(drop=True)
+def build_city_coordinate_table(
+    links: pd.DataFrame, city_points: gpd.GeoDataFrame
+) -> pd.DataFrame:
+    unique_city_rows = (
+        pd.concat(
+            [
+                links[["city_A", "iso_A", "level_A"]].rename(
+                    columns={"city_A": "city", "iso_A": "iso3", "level_A": "level"}
+                ),
+                links[["city_B", "iso_B", "level_B"]].rename(
+                    columns={"city_B": "city", "iso_B": "iso3", "level_B": "level"}
+                ),
+            ],
+            ignore_index=True,
+        )
+        .drop_duplicates(subset=["city", "iso3"])
+        .reset_index(drop=True)
+    )
 
     city_points = city_points.copy()
     city_points["norm_name"] = city_points["NAME"].map(normalize_name)
@@ -293,14 +329,22 @@ def build_city_coordinate_table(links: pd.DataFrame, city_points: gpd.GeoDataFra
         )
 
     if missing:
-        raise ValueError("Cities missing Natural Earth coordinates:\n" + "\n".join(missing))
+        raise ValueError(
+            "Cities missing Natural Earth coordinates:\n" + "\n".join(missing)
+        )
 
-    coords = pd.DataFrame(records).drop_duplicates(subset=["city", "iso3"]).reset_index(drop=True)
+    coords = (
+        pd.DataFrame(records)
+        .drop_duplicates(subset=["city", "iso3"])
+        .reset_index(drop=True)
+    )
     coords.to_csv(OUT_COORDS, index=False)
     return coords
 
 
-def attach_projected_coordinates(links: pd.DataFrame, coords: pd.DataFrame) -> tuple[pd.DataFrame, gpd.GeoDataFrame]:
+def attach_projected_coordinates(
+    links: pd.DataFrame, coords: pd.DataFrame
+) -> tuple[pd.DataFrame, gpd.GeoDataFrame]:
     coord_gdf = gpd.GeoDataFrame(
         coords.copy(),
         geometry=gpd.points_from_xy(coords["longitude"], coords["latitude"]),
@@ -313,10 +357,18 @@ def attach_projected_coordinates(links: pd.DataFrame, coords: pd.DataFrame) -> t
     }
 
     linked = links.copy()
-    linked["x_A"] = linked.apply(lambda row: lookup[(row["city_A"], row["iso_A"])][0], axis=1)
-    linked["y_A"] = linked.apply(lambda row: lookup[(row["city_A"], row["iso_A"])][1], axis=1)
-    linked["x_B"] = linked.apply(lambda row: lookup[(row["city_B"], row["iso_B"])][0], axis=1)
-    linked["y_B"] = linked.apply(lambda row: lookup[(row["city_B"], row["iso_B"])][1], axis=1)
+    linked["x_A"] = linked.apply(
+        lambda row: lookup[(row["city_A"], row["iso_A"])][0], axis=1
+    )
+    linked["y_A"] = linked.apply(
+        lambda row: lookup[(row["city_A"], row["iso_A"])][1], axis=1
+    )
+    linked["x_B"] = linked.apply(
+        lambda row: lookup[(row["city_B"], row["iso_B"])][0], axis=1
+    )
+    linked["y_B"] = linked.apply(
+        lambda row: lookup[(row["city_B"], row["iso_B"])][1], axis=1
+    )
     return linked, coord_gdf
 
 
@@ -328,7 +380,9 @@ def prepare_countries(countries: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     return africa.to_crs(MAP_CRS)
 
 
-def quadratic_arc(x0: float, y0: float, x1: float, y1: float, curvature: float, n: int = 56) -> np.ndarray:
+def quadratic_arc(
+    x0: float, y0: float, x1: float, y1: float, curvature: float, n: int = 56
+) -> np.ndarray:
     dx = x1 - x0
     dy = y1 - y0
     dist = math.hypot(dx, dy)
@@ -348,7 +402,9 @@ def quadratic_arc(x0: float, y0: float, x1: float, y1: float, curvature: float, 
     return np.column_stack([x, y])
 
 
-def build_line_collection(links: pd.DataFrame, cmap: mpl.colors.Colormap, norm: Normalize) -> LineCollection:
+def build_line_collection(
+    links: pd.DataFrame, cmap: mpl.colors.Colormap, norm: Normalize
+) -> LineCollection:
     ordered = links.sort_values(LINE_VALUE_COL).reset_index(drop=True)
     values = ordered[LINE_VALUE_COL].to_numpy(dtype=float)
     v_low = float(np.nanpercentile(values, 10))
@@ -377,7 +433,9 @@ def build_line_collection(links: pd.DataFrame, cmap: mpl.colors.Colormap, norm: 
     for _, row in ordered.iterrows():
         stable_hash = int(
             hashlib.md5(
-                f"{row['city_A']}|{row['city_B']}|{row['iso_A']}|{row['iso_B']}".encode("utf-8")
+                f"{row['city_A']}|{row['city_B']}|{row['iso_A']}|{row['iso_B']}".encode(
+                    "utf-8"
+                )
             ).hexdigest(),
             16,
         )
@@ -404,15 +462,21 @@ def build_line_collection(links: pd.DataFrame, cmap: mpl.colors.Colormap, norm: 
     )
 
 
-def save_checks(links: pd.DataFrame, coords: pd.DataFrame, summary: pd.DataFrame) -> None:
+def save_checks(
+    links: pd.DataFrame, coords: pd.DataFrame, summary: pd.DataFrame
+) -> None:
     lines = []
     lines.append("Result 1.1 cross-country accessibility loss map checks")
     lines.append("=" * 52)
     lines.append("")
     lines.append(f"Connected cross-country city pairs drawn: {len(links):,}")
     lines.append(f"Unique mapped city coordinates: {len(coords):,}")
-    lines.append(f"Mean cross-country travel-time increase: {links[LINE_VALUE_COL].mean():.2f}%")
-    lines.append(f"Min / max increase: {links[LINE_VALUE_COL].min():.2f}% / {links[LINE_VALUE_COL].max():.2f}%")
+    lines.append(
+        f"Mean cross-country travel-time increase: {links[LINE_VALUE_COL].mean():.2f}%"
+    )
+    lines.append(
+        f"Min / max increase: {links[LINE_VALUE_COL].min():.2f}% / {links[LINE_VALUE_COL].max():.2f}%"
+    )
     lines.append("")
     lines.append("Summary CSV row")
     lines.append(summary.to_string(index=False))
@@ -444,7 +508,6 @@ def draw_map(
         }
     )
 
-    # Desaturated mauve-ink ramp for loss emphasis without red/yellow/blue/green semantics.
     line_cmap = LinearSegmentedColormap.from_list(
         "nature_loss_mauve",
         ["#efe8ee", "#d8c8d6", "#b99bb7", "#84657f", "#4d3846"],
@@ -481,10 +544,19 @@ def draw_map(
     ax.set_aspect("equal")
     ax.axis("off")
 
-    fig.text(0.08, 0.145, "Cross-country travel-time increase (%)", ha="left", va="center", fontsize=BASE_FONT_SIZE)
+    fig.text(
+        0.08,
+        0.145,
+        "Cross-country travel-time increase (%)",
+        ha="left",
+        va="center",
+        fontsize=BASE_FONT_SIZE,
+    )
 
     cax = fig.add_axes([0.14, 0.095, 0.68, 0.022])
-    colorbar = mpl.colorbar.ColorbarBase(cax, cmap=line_cmap, norm=line_norm, orientation="horizontal")
+    colorbar = mpl.colorbar.ColorbarBase(
+        cax, cmap=line_cmap, norm=line_norm, orientation="horizontal"
+    )
     colorbar.set_ticks([0, 20, 40, 60, 80])
     colorbar.ax.tick_params(labelsize=BASE_FONT_SIZE, length=2.5, pad=2.0)
     colorbar.outline.set_linewidth(0.45)

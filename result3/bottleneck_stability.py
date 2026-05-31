@@ -54,14 +54,11 @@ from scipy.stats import spearmanr
 
 warnings.filterwarnings("ignore")
 
-MATCH_TOLERANCE_DEG = 0.02  # ~2 km
-CV_MIN_THRESHOLD = 0.02  # same as bottleneck_network.py
+MATCH_TOLERANCE_DEG = 0.02
+CV_MIN_THRESHOLD = 0.02
 TOP_K_DEFAULT = 500
 
 
-# =============================================================================
-# LOAD BASELINE EDGE SCORES
-# =============================================================================
 def load_baseline(edge_scores_csv: Path) -> pd.DataFrame:
     df = pd.read_csv(edge_scores_csv)
     required = {"u", "v", "mid_lon", "mid_lat", "w0", "NI", "CV"}
@@ -88,9 +85,6 @@ def load_baseline(edge_scores_csv: Path) -> pd.DataFrame:
     return df
 
 
-# =============================================================================
-# LOAD FUTURE ROAD SPEEDS FOR ALL COUNTRIES
-# =============================================================================
 def load_future_speeds(future_dir: Path) -> pd.DataFrame:
     """Load all country CSVs from a scenario/period directory."""
     dfs = []
@@ -123,9 +117,6 @@ def load_future_speeds(future_dir: Path) -> pd.DataFrame:
     return combined
 
 
-# =============================================================================
-# SPATIAL MATCH: edge midpoints → road segment centroids
-# =============================================================================
 def spatial_match(edges_df: pd.DataFrame, roads_df: pd.DataFrame) -> pd.Series:
     """
     Returns a Series indexed by edge index, values = matched road index (or -1).
@@ -138,9 +129,6 @@ def spatial_match(edges_df: pd.DataFrame, roads_df: pd.DataFrame) -> pd.Series:
     return pd.Series(matched, index=edges_df.index)
 
 
-# =============================================================================
-# COMPUTE FUTURE CV AND BOTTLENECK
-# =============================================================================
 def compute_future_cv(
     edges_df: pd.DataFrame, roads_df: pd.DataFrame, match_series: pd.Series
 ) -> pd.Series:
@@ -179,9 +167,6 @@ def compute_bottleneck_scores(ni: pd.Series, cv: pd.Series) -> pd.Series:
     return ni_norm * cv_norm
 
 
-# =============================================================================
-# STABILITY METRICS
-# =============================================================================
 def jaccard_at_k(baseline_scores: pd.Series, future_scores: pd.Series, k: int) -> float:
     top_b = set(baseline_scores.nlargest(k).index)
     top_f = set(future_scores.nlargest(k).index)
@@ -209,9 +194,6 @@ def strategic_retention(
     return float(retained / n_base)
 
 
-# =============================================================================
-# MAIN
-# =============================================================================
 def main():
     parser = argparse.ArgumentParser(
         description="Bottleneck stability across future scenarios"
@@ -303,7 +285,6 @@ def main():
             cv_future = compute_future_cv(baseline, roads_df, match_series)
             b_future = compute_bottleneck_scores(baseline["NI"], cv_future)
 
-            # Save per-scenario edge-level results
             per_edge = baseline[
                 [
                     "u",
@@ -325,7 +306,6 @@ def main():
                 out_dir / f"bottleneck_stability_{rcp}_{period}.csv", index=False
             )
 
-            # Stability metrics
             j_k = jaccard_at_k(baseline["bottleneck_base"], b_future, args.top_k)
             rho, _ = spearmanr(
                 baseline["bottleneck_base"].fillna(0), b_future.fillna(0)

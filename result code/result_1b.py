@@ -1,4 +1,4 @@
-#!/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/bin/python3.11
+#!/usr/bin/env python3
 """
 Result 1.1 district amplification-ratio choropleth.
 
@@ -13,7 +13,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-OUTPUT_DIR = Path("/Users/suhang/Downloads/同步空间/工作文件/0-1博后论文/4.非洲路网可达性/插图绘制/result 1.1")
+OUTPUT_DIR = Path("<FIGURE_OUTPUT_ROOT>/result 1.1")
 os.environ.setdefault("MPLCONFIGDIR", str(OUTPUT_DIR / "_mplconfig"))
 (OUTPUT_DIR / "_mplconfig").mkdir(parents=True, exist_ok=True)
 
@@ -27,11 +27,7 @@ import numpy as np
 from matplotlib.colors import BoundaryNorm, ListedColormap
 from matplotlib.patches import Rectangle
 
-
-DISTRICT_GPKG = Path(
-    "/Users/suhang/Library/Containers/com.tencent.xinWeChat/Data/Documents/xwechat_files/"
-    "Suhang1995522_c823/temp/drag/district_od_fill.gpkg"
-)
+DISTRICT_GPKG = Path("<LOCAL_INPUT_ROOT>/" "input_files/district_od_fill.gpkg")
 OUT_PNG = OUTPUT_DIR / "result1_1_district_amplification_map.png"
 OUT_PDF = OUTPUT_DIR / "result1_1_district_amplification_map.pdf"
 OUT_CHECKS = OUTPUT_DIR / "result1_1_district_amplification_map_checks.txt"
@@ -40,7 +36,9 @@ CM_TO_INCH = 1 / 2.54
 FIGSIZE = (9.5 * CM_TO_INCH, 13.0 * CM_TO_INCH)
 DPI = 600
 BASE_FONT_SIZE = 9.5
-MAP_CRS = "+proj=aea +lat_1=-18 +lat_2=21 +lat_0=0 +lon_0=20 +datum=WGS84 +units=m +no_defs"
+MAP_CRS = (
+    "+proj=aea +lat_1=-18 +lat_2=21 +lat_0=0 +lon_0=20 +datum=WGS84 +units=m +no_defs"
+)
 VALUE_COL = "amplification_ratio"
 VALUE_LABEL = "Amplification ratio (x)"
 VALUE_MIN_VALID = 0.0
@@ -57,13 +55,15 @@ def require_files(paths: list[Path]) -> None:
 
 def find_natural_earth_lowres() -> Path:
     candidates = [
-        Path("/opt/homebrew/lib/python3.11/site-packages/pyogrio/tests/fixtures/naturalearth_lowres/naturalearth_lowres.shp"),
-        Path("/usr/local/lib/python3.11/site-packages/pyogrio/tests/fixtures/naturalearth_lowres/naturalearth_lowres.shp"),
+        Path("<PYOGRIO_FIXTURE_ROOT>/naturalearth_lowres/naturalearth_lowres.shp"),
+        Path("<PYOGRIO_FIXTURE_ROOT>/naturalearth_lowres/naturalearth_lowres.shp"),
     ]
     for candidate in candidates:
         if candidate.exists():
             return candidate
-    raise FileNotFoundError("Local Natural Earth low-resolution country boundary file not found.")
+    raise FileNotFoundError(
+        "Local Natural Earth low-resolution country boundary file not found."
+    )
 
 
 def load_inputs() -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
@@ -71,7 +71,14 @@ def load_inputs() -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
     districts = gpd.read_file(DISTRICT_GPKG)
     countries = gpd.read_file(find_natural_earth_lowres())
 
-    required = ["district_id", "country", VALUE_COL, "dE_pct", "mean_road_degradation_pct", "geometry"]
+    required = [
+        "district_id",
+        "country",
+        VALUE_COL,
+        "dE_pct",
+        "mean_road_degradation_pct",
+        "geometry",
+    ]
     missing = [col for col in required if col not in districts.columns]
     if missing:
         raise ValueError(f"district gpkg missing required columns: {missing}")
@@ -87,9 +94,15 @@ def load_inputs() -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
     return districts, africa
 
 
-def split_valid_invalid(districts: gpd.GeoDataFrame) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
-    valid = districts.loc[districts[VALUE_COL].notna() & (districts[VALUE_COL] > VALUE_MIN_VALID)].copy()
-    invalid = districts.loc[~(districts[VALUE_COL].notna() & (districts[VALUE_COL] > VALUE_MIN_VALID))].copy()
+def split_valid_invalid(
+    districts: gpd.GeoDataFrame,
+) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
+    valid = districts.loc[
+        districts[VALUE_COL].notna() & (districts[VALUE_COL] > VALUE_MIN_VALID)
+    ].copy()
+    invalid = districts.loc[
+        ~(districts[VALUE_COL].notna() & (districts[VALUE_COL] > VALUE_MIN_VALID))
+    ].copy()
     return valid, invalid
 
 
@@ -108,8 +121,12 @@ def save_checks(districts: gpd.GeoDataFrame) -> None:
     lines.append(f"Mean across valid polygons: {values.mean():.2f}x")
     lines.append(f"Median across valid polygons: {values.median():.2f}x")
     lines.append(f"95th percentile: {values.quantile(0.95):.2f}x")
-    lines.append(f"Values above top bin (> {BOUNDS[-1]:.0f}x): {(values > BOUNDS[-1]).sum():,}")
-    lines.append(f"Non-positive values treated as no fill: {(districts[VALUE_COL] <= VALUE_MIN_VALID).sum():,}")
+    lines.append(
+        f"Values above top bin (> {BOUNDS[-1]:.0f}x): {(values > BOUNDS[-1]).sum():,}"
+    )
+    lines.append(
+        f"Non-positive values treated as no fill: {(districts[VALUE_COL] <= VALUE_MIN_VALID).sum():,}"
+    )
     lines.append("")
     lines.append("Top countries by valid polygon count")
     lines.append(valid["country"].value_counts().head(20).to_string())
@@ -125,7 +142,9 @@ def save_checks(districts: gpd.GeoDataFrame) -> None:
     )
     lines.append("")
     lines.append("Invalid-fill countries")
-    lines.append(invalid["country"].value_counts().to_string() if not invalid.empty else "None")
+    lines.append(
+        invalid["country"].value_counts().to_string() if not invalid.empty else "None"
+    )
     OUT_CHECKS.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
@@ -201,7 +220,15 @@ def draw_map(districts: gpd.GeoDataFrame, countries: gpd.GeoDataFrame) -> None:
             transform=no_fill_ax.transAxes,
         )
     )
-    no_fill_ax.text(0.25, 0.50, "No fill", ha="left", va="center", fontsize=BASE_FONT_SIZE, transform=no_fill_ax.transAxes)
+    no_fill_ax.text(
+        0.25,
+        0.50,
+        "No fill",
+        ha="left",
+        va="center",
+        fontsize=BASE_FONT_SIZE,
+        transform=no_fill_ax.transAxes,
+    )
 
     fig.text(0.08, 0.145, VALUE_LABEL, ha="left", va="center", fontsize=BASE_FONT_SIZE)
 

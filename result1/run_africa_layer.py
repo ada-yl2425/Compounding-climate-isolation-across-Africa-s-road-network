@@ -26,9 +26,7 @@ from scipy.spatial import cKDTree
 
 warnings.filterwarnings("ignore")
 
-# =============================================================================
-# CONFIGURATION
-# =============================================================================
+
 BASE_DIR = Path("path/to/your/base/directory")
 ROADS_DIR = BASE_DIR / "RAW/Road_data"
 SPEED_DIR = BASE_DIR / "road_speed_cordex"
@@ -41,7 +39,7 @@ SNAP_THRESHOLD_DEG = 0.0045
 BORDER_DEG = 0.5
 CROSS_BORDER_DEG = 0.5
 CROSS_BORDER_SPEED = 40.0
-CROSS_BORDER_DIST_DEG = 0.20  # ~22 km — wider search fixes fragmented LCC
+CROSS_BORDER_DIST_DEG = 0.20
 CITY_SNAP_MAX_DEG = 0.5
 SEVERE_INCREASE_THR = 0.5
 UNREACHABLE_THRESH = 1e8
@@ -100,9 +98,6 @@ FOLDER_TO_ISO = {
 }
 
 
-# =============================================================================
-# UNION-FIND (Within-country endpoint merge)
-# =============================================================================
 def _merge_endpoints(pts_arr, same_pairs, threshold):
     N = len(pts_arr)
     parent = list(range(N))
@@ -139,9 +134,6 @@ def _merge_endpoints(pts_arr, same_pairs, threshold):
     return node_id_of, node_coords
 
 
-# =============================================================================
-# BUILD ONE COUNTRY GRAPH
-# =============================================================================
 def build_country_graph(country, node_offset):
     """
     Build G0/G1 for a single country.
@@ -287,9 +279,6 @@ def build_country_graph(country, node_offset):
     return G0, G1, node_coords_global, border_nodes
 
 
-# =============================================================================
-# BUILD PAN-AFRICAN GRAPH
-# =============================================================================
 def build_africa_graph(checkpoint_path: Path = CHECKPOINT_PATH, rebuild: bool = False):
     if not rebuild and checkpoint_path.exists():
         print(f"\n  [CHECKPOINT] Loading graph from {checkpoint_path.name} …")
@@ -383,7 +372,6 @@ def build_africa_graph(checkpoint_path: Path = CHECKPOINT_PATH, rebuild: bool = 
         f"disconnected city pairs will appear as 'both_unreachable'."
     )
 
-    # Save checkpoint
     checkpoint_path = CHECKPOINT_PATH
     checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
     with open(checkpoint_path, "wb") as f:
@@ -398,9 +386,6 @@ def build_africa_graph(checkpoint_path: Path = CHECKPOINT_PATH, rebuild: bool = 
     return G0_pan, G1_pan, all_node_coords, all_node_coords
 
 
-# =============================================================================
-# SNAP + OD ANALYSIS
-# =============================================================================
 def snap_cities(nodes_csv, all_node_coords):
     """
     Snap all 84 cities to their nearest road-network node.
@@ -616,9 +601,6 @@ def compute_od_analysis(G0, G1, snapped):
     return od_pairs_df, city_iso_df, mat_n, mat_e, summary
 
 
-# =============================================================================
-# MAIN
-# =============================================================================
 def main():
     import argparse
 

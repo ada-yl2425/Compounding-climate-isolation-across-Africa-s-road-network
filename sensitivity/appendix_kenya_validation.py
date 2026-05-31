@@ -10,7 +10,7 @@ Sources: OCHA Kenya Flash Updates 1–6 (April–May 2024); ACAPS Briefing Note
 
 Key documented disruption:
   - A3 Nairobi–Garissa highway submerged at Mororo section, Tana River County
-    (OCHA Flash Update #4, 3 May 2024; duration ≥ 10 days)
+    (OCHA Flash Update 4, 3 May 2024; duration ≥ 10 days)
   - All road access to Garissa, Wajir, Mandera counties cut off
   - 30 health facilities in 7 counties inaccessible
   - Affected population: 306,520 (March–May 2024)
@@ -37,9 +37,6 @@ import pandas as pd
 from matplotlib.colors import BoundaryNorm
 from matplotlib.lines import Line2D
 
-# =============================================================================
-# CONFIGURATION
-# =============================================================================
 BASE_RESULT1 = Path("path/to/africa_pavement/result/result1")
 BASE_RAW = Path("path/to/africa_pavement/RAW")
 
@@ -55,8 +52,7 @@ CITY_PAIRS_CSV = (
 )
 GADM_KEN_L1 = BASE_RAW / "GADM_admin/gadm41_KEN/gadm41_KEN_1.shp"
 
-# OCHA Flash Updates 1–6 (April–May 2024): counties with documented road loss
-# Sources: OCHA Kenya Flash Update #4 (3 May 2024), #6 (17 May 2024)
+
 OCHA_AFFECTED_COUNTIES = [
     "Garissa",
     "Tana River",
@@ -67,12 +63,10 @@ OCHA_AFFECTED_COUNTIES = [
     "Lamu",
 ]
 
-# District province-number → GADM county mapping for Kenya
-# KEN_X → county X in GADM (1-indexed); verified by centroid coordinates
-# KEN_7 = Garissa, KEN_40 = Tana River, KEN_46 = Wajir, KEN_19 = Kwale, KEN_14 = Kilifi
+
 HIGH_VULN_PROVINCE_NUMS = [7, 14, 19, 39, 40, 46]
 
-# Key cities (lon, lat, label_offset_x, label_offset_y)
+
 CITIES = {
     "Nairobi": (36.820, -1.292, 0.2, -0.25),
     "Garissa": (39.648, -0.454, 0.2, 0.15),
@@ -80,31 +74,30 @@ CITIES = {
     "Wajir": (40.058, 1.748, 0.2, 0.15),
 }
 
-# A3 Highway: Nairobi → Garissa (documented submerged section)
+
 A3_COORDS = [
-    (36.820, -1.292),  # Nairobi
-    (37.070, -1.030),  # Thika
-    (38.060, -0.940),  # Mwingi
-    (39.648, -0.454),  # Garissa
+    (36.820, -1.292),
+    (37.070, -1.030),
+    (38.060, -0.940),
+    (39.648, -0.454),
 ]
 
-# Garissa → Mombasa coastal corridor (through Tana River County)
+
 COASTAL_CORRIDOR = [
-    (39.648, -0.454),  # Garissa
-    (40.100, -1.500),  # Mororo / Tana River crossing  ← A3 SUBMERGED HERE
-    (40.100, -3.210),  # Malindi
-    (39.668, -4.050),  # Mombasa
+    (39.648, -0.454),
+    (40.100, -1.500),
+    (40.100, -3.210),
+    (39.668, -4.050),
 ]
 
-# OCHA-documented specific disruption points
-# Format: label -> (lon, lat, dx, dy, ha)
+
 OCHA_DISRUPTIONS = {
-    "Mororo (A3 submerged)\nOCHA Flash Update #4": (40.100, -1.500, 0.20, 0.0, "left"),
+    "Mororo (A3 submerged)\nOCHA Flash Update 4": (40.100, -1.500, 0.20, 0.0, "left"),
     "Garissa county\nroads cut off": (39.648, -0.454, -0.25, 0.30, "right"),
     "Wajir – all road\naccess disrupted": (40.058, 1.748, 0.20, 0.0, "left"),
 }
 
-# Map zoom extent (Kenya relevant corridor)
+
 MAP_EXTENT = (34.5, 42.5, -5.5, 4.5)
 
 ANNOTATION_FACTS = [
@@ -117,9 +110,6 @@ ANNOTATION_FACTS = [
 ]
 
 
-# =============================================================================
-# HELPERS
-# =============================================================================
 def load_kenya_districts(gpkg_path: Path) -> gpd.GeoDataFrame:
     gdf = gpd.read_file(gpkg_path)
     ken = gdf[gdf["country"] == "Kenya"].copy()
@@ -134,9 +124,6 @@ def load_kenya_districts(gpkg_path: Path) -> gpd.GeoDataFrame:
     return ken
 
 
-# =============================================================================
-# FIGURE
-# =============================================================================
 def make_figure(
     ken: gpd.GeoDataFrame, gadm_county: gpd.GeoDataFrame, output_path: Path
 ):
@@ -148,7 +135,6 @@ def make_figure(
     levels = [0, 25, 30, 35, 40, 45, 50, 55, 62]
     norm = BoundaryNorm(levels, ncolors=cmap.N, clip=True)
 
-    # ==================== LEFT PANEL — model prediction ====================
     ax = axes[0]
     ax.set_facecolor("#e8f4f8")
 
@@ -161,14 +147,12 @@ def make_figure(
         linewidth=0.3,
     )
 
-    # Highlight high-vulnerability province groups with bold boundary
     high = ken[ken["prov_num"].isin(HIGH_VULN_PROVINCE_NUMS)]
     high_dissolved = high.dissolve(by="prov_num")
     high_dissolved.boundary.plot(
         ax=ax, color="#1a5276", linewidth=1.6, linestyle="--", zorder=5
     )
 
-    # Road corridors
     ax.plot(
         [c[0] for c in A3_COORDS],
         [c[1] for c in A3_COORDS],
@@ -190,7 +174,6 @@ def make_figure(
         solid_capstyle="round",
     )
 
-    # City markers
     for name, (lon, lat, dx, dy) in CITIES.items():
         ax.plot(lon, lat, "o", color="#1b2631", markersize=5, zorder=8)
         ax.text(
@@ -205,7 +188,6 @@ def make_figure(
             zorder=9,
         )
 
-    # County label for the most affected corridor
     ax.text(
         39.8,
         0.5,
@@ -278,13 +260,11 @@ def make_figure(
         framealpha=0.88,
     )
 
-    # ==================== RIGHT PANEL — documented disruption ====================
     ax2 = axes[1]
     ax2.set_facecolor("#e8f4f8")
 
     ken.plot(ax=ax2, color="#d5d8dc", edgecolor="white", linewidth=0.3)
 
-    # OCHA-documented affected counties (GADM boundaries)
     affected = gadm_county[gadm_county["NAME_1"].isin(OCHA_AFFECTED_COUNTIES)]
     affected.plot(
         ax=ax2,
@@ -295,7 +275,6 @@ def make_figure(
         zorder=3,
     )
 
-    # Model high-vulnerability districts within affected counties
     high_vuln = ken[
         (ken["prov_num"].isin(HIGH_VULN_PROVINCE_NUMS)) & (ken["eff_loss_pctile"] >= 90)
     ]
@@ -308,7 +287,6 @@ def make_figure(
         zorder=4,
     )
 
-    # Road corridors
     ax2.plot(
         [c[0] for c in A3_COORDS],
         [c[1] for c in A3_COORDS],
@@ -328,7 +306,6 @@ def make_figure(
         solid_capstyle="round",
     )
 
-    # Cities
     for name, (lon, lat, dx, dy) in CITIES.items():
         ax2.plot(lon, lat, "o", color="#1b2631", markersize=5, zorder=8)
         ax2.text(
@@ -343,7 +320,6 @@ def make_figure(
             zorder=9,
         )
 
-    # OCHA disruption markers
     for label, (lon, lat, dx, dy, ha) in OCHA_DISRUPTIONS.items():
         ax2.plot(
             lon,
@@ -416,9 +392,6 @@ def make_figure(
         framealpha=0.88,
     )
 
-    # ------------------------------------------------------------------
-    # Stats annotation
-    # ------------------------------------------------------------------
     fig.text(
         0.5,
         0.005,
@@ -449,9 +422,6 @@ def make_figure(
     plt.close()
 
 
-# =============================================================================
-# MAIN
-# =============================================================================
 def main():
     parser = argparse.ArgumentParser(
         description="Generate Kenya flood validation figure"
@@ -473,7 +443,6 @@ def main():
     gadm_county = gpd.read_file(GADM_KEN_L1).to_crs("EPSG:4326")
     print(f"  {len(gadm_county)} counties")
 
-    # Summary for paper text
     target = ken[ken["prov_num"].isin(HIGH_VULN_PROVINCE_NUMS)]
     print("\n=== High-vulnerability corridor districts ===")
     print(

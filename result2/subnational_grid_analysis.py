@@ -64,16 +64,13 @@ warnings.filterwarnings("ignore")
 
 _DEFAULT_BASE = Path("path/to/base")
 
-# Minimum population per grid cell to include in analysis
+
 POP_MIN = 1_000
 
-# Countries to label on scatter plots
-LABEL_CELLS = False  # label individual cells is too noisy; use country centroids
+
+LABEL_CELLS = False
 
 
-# =============================================================================
-# STEP 1 — Load & aggregate node accessibility to grid cells
-# =============================================================================
 def load_node_data(base: Path) -> pd.DataFrame:
     acc_dir = base / "web" / "health_accessibility"
     frames = []
@@ -170,15 +167,12 @@ def build_grid(base: Path, deg: float) -> pd.DataFrame:
     grid = node_grid.merge(fac_grid, on=["cell_lon", "cell_lat"], how="left")
     grid["n_facilities"] = grid["n_facilities"].fillna(0)
 
-    # Facility density
     grid["facility_per_million"] = grid["n_facilities"] / grid["total_pop"] * 1e6
 
-    # Road node density (nodes per 1000 km²)
     lat_rad = np.radians(grid["cell_lat"])
     cell_area_km2 = (deg * 111.0) * (deg * 111.0 * np.cos(lat_rad))
     grid["node_density"] = grid["n_nodes"] / cell_area_km2 * 1e3
 
-    # Filter
     grid = grid[grid["total_pop"] >= POP_MIN].copy()
     grid = grid.dropna(subset=["pw_delta_t", "pw_t_normal", "facility_per_million"])
     grid = grid[np.isfinite(grid["facility_per_million"])]
@@ -188,9 +182,6 @@ def build_grid(base: Path, deg: float) -> pd.DataFrame:
     return grid
 
 
-# =============================================================================
-# STEP 2 — Spearman correlation table
-# =============================================================================
 CORR_PAIRS = [
     ("facility_per_million", "pw_delta_t", "Facility density vs climate impact"),
     ("facility_per_million", "pw_t_normal", "Facility density vs baseline travel"),
@@ -229,13 +220,9 @@ def compute_correlations(grid: pd.DataFrame, out_dir: Path) -> pd.DataFrame:
     return df
 
 
-# =============================================================================
-# STEP 3 — Scatter plots
-# =============================================================================
 def plot_scatter(grid: pd.DataFrame, out_dir: Path):
     fig, axes = plt.subplots(1, 2, figsize=(14, 6))
 
-    # --- clip extreme outliers for display ---
     q99_fac = grid["facility_per_million"].quantile(0.99)
     q99_delta = grid["pw_delta_t"].quantile(0.99)
     q99_base = grid["pw_t_normal"].quantile(0.99)
@@ -245,7 +232,6 @@ def plot_scatter(grid: pd.DataFrame, out_dir: Path):
         & (grid["pw_t_normal"] <= q99_base)
     ].copy()
 
-    # --- Left panel: facility density vs pw_delta_t ---
     ax = axes[0]
     norm = mcolors.Normalize(vmin=0, vmax=np.percentile(g["pw_t_normal"], 95))
     cmap = cm.get_cmap("YlOrRd")
@@ -255,7 +241,6 @@ def plot_scatter(grid: pd.DataFrame, out_dir: Path):
         g["facility_per_million"], g["pw_delta_t"], s=6, c=colors, alpha=0.5, lw=0
     )
 
-    # Trend line
     valid = g[["facility_per_million", "pw_delta_t"]].dropna()
     z = np.polyfit(valid["facility_per_million"], valid["pw_delta_t"], 1)
     x_line = np.linspace(
@@ -293,7 +278,6 @@ def plot_scatter(grid: pd.DataFrame, out_dir: Path):
     )
     ax.grid(alpha=0.2)
 
-    # --- Right panel: facility density vs pw_t_normal ---
     ax2 = axes[1]
     norm2 = mcolors.Normalize(vmin=0, vmax=np.percentile(g["pw_delta_t"], 95))
     colors2 = cmap(norm2(g["pw_delta_t"].values))
@@ -346,9 +330,6 @@ def plot_scatter(grid: pd.DataFrame, out_dir: Path):
     print(f"  Saved → grid_scatter.png")
 
 
-# =============================================================================
-# STEP 4 — OLS regression
-# =============================================================================
 def run_regression(grid: pd.DataFrame, out_dir: Path):
     reg = (
         grid[["pw_delta_t", "facility_per_million", "total_pop", "pw_t_normal"]]
@@ -391,9 +372,6 @@ def run_regression(grid: pd.DataFrame, out_dir: Path):
     print(f"  Saved → grid_regression_summary.txt")
 
 
-# =============================================================================
-# MAIN
-# =============================================================================
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--base", default=str(_DEFAULT_BASE))

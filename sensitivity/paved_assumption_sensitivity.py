@@ -207,9 +207,6 @@ def scenario_weights(
     if scenario["scenario"] == "default_web1":
         return w0, w1
 
-    # Existing neutral weights are roughly length / median-unpaved speed.
-    # Scaling to 80 km/h changes normal weights only slightly, but makes the
-    # paved-road counterfactual explicit.
     scale_to_80 = median_unpaved_v_normal / 80.0
     w0[neutral_mask] = base_w0[neutral_mask] * scale_to_80
     w1[neutral_mask] = w0[neutral_mask] * float(scenario["neutral_extreme_multiplier"])

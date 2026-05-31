@@ -11,56 +11,44 @@ import zipfile
 from pathlib import Path
 from typing import Dict, List, Sequence, Tuple
 
-OUTPUT_DIR = Path(
-    "/Users/suhang/Downloads/同步空间/工作文件/0-1博后论文/4.非洲路网可达性/插图绘制/result 3"
-)
+OUTPUT_DIR = Path("<FIGURE_OUTPUT_ROOT>/result 3")
 
 PANEL_A_REPORT_CANDIDATES = [
+    Path("<LOCAL_DATA_ROOT>/" "input_files/bottleneck_stability_report.csv"),
     Path(
-        "/Users/suhang/Library/Containers/com.tencent.xinWeChat/Data/Documents/"
-        "xwechat_files/Suhang1995522_c823/temp/drag/bottleneck_stability_report.csv"
-    ),
-    Path(
-        "/Users/suhang/Downloads/Synchronous Space/Working Documents/0-1 Post-PhD Papers/"
-        "4. African Road Network Accessibility/Process Files/result/result3/"
+        "<PROJECT_WORK_ROOT>/result/result3/"
         "finding1_future_bottleneck_stability/bottleneck_stability_report.csv"
     ),
     Path(
-        "/Users/suhang/Downloads/同步空间/工作文件/0-1博后论文/4.非洲路网可达性/过程文件/result/result3/"
+        "<PROJECT_WORK_ROOT>/result/result3/"
         "finding1_future_bottleneck_stability/bottleneck_stability_report.csv"
     ),
     Path(
-        "/Users/suhang/Downloads/result/result3/finding1_future_bottleneck_stability/"
+        "<RESULT_ROOT>/result3/finding1_future_bottleneck_stability/"
         "bottleneck_stability_report.csv"
     ),
 ]
 
 PANEL_B_CSV_CANDIDATES = [
+    Path("<LOCAL_DATA_ROOT>/" "input_files/04_paving_experiment.csv"),
     Path(
-        "/Users/suhang/Library/Containers/com.tencent.xinWeChat/Data/Documents/"
-        "xwechat_files/Suhang1995522_c823/temp/drag/04_paving_experiment.csv"
-    ),
-    Path(
-        "/Users/suhang/Downloads/同步空间/工作文件/0-1博后论文/4.非洲路网可达性/过程文件/result/result3/"
+        "<PROJECT_WORK_ROOT>/result/result3/"
         "finding4_5_paving_strategy_recovery_curves/paving_fraction_vs_recovery_NI_CV_guided_random.csv"
     ),
 ]
 NETWORK_TOTAL_STATS_JSON_CANDIDATES = [
     Path(
-        "/Users/suhang/Downloads/同步空间/工作文件/0-1博后论文/4.非洲路网可达性/过程文件/result/result3/"
+        "<PROJECT_WORK_ROOT>/result/result3/"
         "finding3_NI_CV_quadrant_share/network_total_stats.json"
     )
 ]
 QUADRANT_COUNTS_CSV_CANDIDATES = [
     Path(
-        "/Users/suhang/Downloads/同步空间/工作文件/0-1博后论文/4.非洲路网可达性/过程文件/result/result3/"
+        "<PROJECT_WORK_ROOT>/result/result3/"
         "finding3_NI_CV_quadrant_share/NI_CV_2x2_quadrant_edge_counts.csv"
     )
 ]
-RESULT_NOTES_DOCX = Path(
-    "/Users/suhang/Downloads/同步空间/工作文件/0-1博后论文/4.非洲路网可达性/过程文件/"
-    "result 构思(数据补全版).docx"
-)
+RESULT_NOTES_DOCX = Path("<PROJECT_WORK_ROOT>/" "result_notes_completed_data.docx")
 
 FIGURE_STEM = "result3_bottleneck_stability_and_recovery"
 LOG_PATH = OUTPUT_DIR / f"{FIGURE_STEM}_log.txt"
@@ -200,7 +188,11 @@ def infer_scale(values: pd.Series, label: str) -> Tuple[float, str]:
     )
 
 
-def find_column(columns: Sequence[str], include_patterns: Sequence[str], exclude_patterns: Sequence[str] = ()) -> str | None:
+def find_column(
+    columns: Sequence[str],
+    include_patterns: Sequence[str],
+    exclude_patterns: Sequence[str] = (),
+) -> str | None:
     for column in columns:
         lower = column.lower()
         if all(pattern in lower for pattern in include_patterns) and not any(
@@ -222,7 +214,9 @@ def read_docx_text(path: Path) -> str:
 def extract_panel_a_curve_from_notes(path: Path, n_total: int) -> pd.DataFrame:
     require_file(path, "Result 3 notes DOCX")
     text = read_docx_text(path)
-    pattern = re.compile(r"前\s*([0-9]+(?:\.[0-9]+)?)%\s*([\d,]+)\s*([0-9]+(?:\.[0-9]+)?)\s*%")
+    pattern = re.compile(
+        r"top\s*([0-9]+(?:\.[0-9]+)?)%\s*([\d,]+)\s*([0-9]+(?:\.[0-9]+)?)\s*%"
+    )
     rows = []
     seen_quantiles = set()
     for quantile_text, k_text, jaccard_text in pattern.findall(text):
@@ -260,14 +254,18 @@ def extract_panel_a_curve_from_notes(path: Path, n_total: int) -> pd.DataFrame:
     return curve_df
 
 
-def prepare_panel_a(panel_a_path: Path, network_stats: Dict[str, int] | None = None) -> Dict[str, object]:
+def prepare_panel_a(
+    panel_a_path: Path, network_stats: Dict[str, int] | None = None
+) -> Dict[str, object]:
     report_df = pd.read_csv(panel_a_path)
     columns = list(report_df.columns)
     period_col = find_column(columns, ["period"]) or find_column(columns, ["horizon"])
     spearman_col = find_column(columns, ["spearman"])
     cv_change_col = find_column(columns, ["cv", "change"])
     summary_jaccard_col = find_column(columns, ["jaccard"])
-    direct_quantile_col = find_column(columns, ["quantile"]) or find_column(columns, ["top", "pct"])
+    direct_quantile_col = find_column(columns, ["quantile"]) or find_column(
+        columns, ["top", "pct"]
+    )
     direct_top_k_col = find_column(columns, ["top_k"], ["pct"]) or find_column(
         columns, ["top", "k"], ["pct"]
     )
@@ -275,9 +273,16 @@ def prepare_panel_a(panel_a_path: Path, network_stats: Dict[str, int] | None = N
     log("Panel A checks")
     log(f"1) bottleneck_stability_report.csv fields: {columns}")
     if period_col is None:
-        raise ValueError("Could not identify the future-period field in Panel A report.")
+        raise ValueError(
+            "Could not identify the future-period field in Panel A report."
+        )
 
-    periods = sorted(int(value) for value in pd.to_numeric(report_df[period_col], errors="coerce").dropna().unique())
+    periods = sorted(
+        int(value)
+        for value in pd.to_numeric(report_df[period_col], errors="coerce")
+        .dropna()
+        .unique()
+    )
     log(f"2) Future horizons found: {periods}")
 
     direct_curve_available = False
@@ -292,26 +297,37 @@ def prepare_panel_a(panel_a_path: Path, network_stats: Dict[str, int] | None = N
 
     curve_source_note = "primary_csv_direct"
     if direct_curve_available:
-        quantile_scale, _ = infer_scale(report_df[direct_quantile_col], direct_quantile_col)
-        jaccard_scale, _ = infer_scale(report_df[summary_jaccard_col], summary_jaccard_col)
+        quantile_scale, _ = infer_scale(
+            report_df[direct_quantile_col], direct_quantile_col
+        )
+        jaccard_scale, _ = infer_scale(
+            report_df[summary_jaccard_col], summary_jaccard_col
+        )
         curve_df = pd.DataFrame(
             {
-                "period": pd.to_numeric(report_df[period_col], errors="coerce").astype(int),
-                "quantile_pct": pd.to_numeric(report_df[direct_quantile_col], errors="coerce")
+                "period": pd.to_numeric(report_df[period_col], errors="coerce").astype(
+                    int
+                ),
+                "quantile_pct": pd.to_numeric(
+                    report_df[direct_quantile_col], errors="coerce"
+                )
                 * quantile_scale,
-                "jaccard_pct": pd.to_numeric(report_df[summary_jaccard_col], errors="coerce")
+                "jaccard_pct": pd.to_numeric(
+                    report_df[summary_jaccard_col], errors="coerce"
+                )
                 * jaccard_scale,
                 "curve_source": "primary_csv_direct",
                 "horizon_specific_curve": True,
             }
         )
         if direct_top_k_col is not None:
-            curve_df["k_edges"] = pd.to_numeric(report_df[direct_top_k_col], errors="coerce").astype(int)
+            curve_df["k_edges"] = pd.to_numeric(
+                report_df[direct_top_k_col], errors="coerce"
+            ).astype(int)
         elif network_stats is not None and "n_total" in network_stats:
-            curve_df["k_edges"] = (
-                np.floor(int(network_stats["n_total"]) * curve_df["quantile_pct"] / 100.0)
-                .astype(int)
-            )
+            curve_df["k_edges"] = np.floor(
+                int(network_stats["n_total"]) * curve_df["quantile_pct"] / 100.0
+            ).astype(int)
         else:
             curve_df["k_edges"] = np.nan
         curve_df = (
@@ -348,7 +364,9 @@ def prepare_panel_a(panel_a_path: Path, network_stats: Dict[str, int] | None = N
                         "quantile_pct": float(row["quantile_pct"]),
                         "k_edges": int(row["k_edges"]),
                         "expected_k_edges_floor": int(row["expected_k_edges_floor"]),
-                        "k_matches_expected_floor": bool(row["k_matches_expected_floor"]),
+                        "k_matches_expected_floor": bool(
+                            row["k_matches_expected_floor"]
+                        ),
                         "jaccard_pct": float(row["jaccard_pct"]),
                         "curve_source": row["curve_source"],
                         "horizon_specific_curve": False,
@@ -361,19 +379,25 @@ def prepare_panel_a(panel_a_path: Path, network_stats: Dict[str, int] | None = N
         for period in periods:
             log(f"   Period {period}:")
             period_sample = (
-                curve_df[curve_df["period"] == period][["quantile_pct", "k_edges", "jaccard_pct"]]
+                curve_df[curve_df["period"] == period][
+                    ["quantile_pct", "k_edges", "jaccard_pct"]
+                ]
                 .sort_values("quantile_pct")
                 .reset_index(drop=True)
             )
             for _, row in period_sample.iterrows():
-                k_text = f"{int(row['k_edges']):,}" if pd.notna(row["k_edges"]) else "NA"
+                k_text = (
+                    f"{int(row['k_edges']):,}" if pd.notna(row["k_edges"]) else "NA"
+                )
                 log(
                     f"      Top {row['quantile_pct']:.0f}% (K={k_text}) -> "
                     f"Jaccard {row['jaccard_pct']:.1f}%"
                 )
     else:
         curve_sample = (
-            curve_df[curve_df["period"] == periods[0]][["quantile_pct", "k_edges", "jaccard_pct"]]
+            curve_df[curve_df["period"] == periods[0]][
+                ["quantile_pct", "k_edges", "jaccard_pct"]
+            ]
             .sort_values("quantile_pct")
             .reset_index(drop=True)
         )
@@ -442,7 +466,9 @@ def match_fraction_row(
     target_pct: float,
     fraction_scale: float,
 ) -> pd.Series:
-    target_value = target_pct / fraction_scale if fraction_scale == 100.0 else target_pct
+    target_value = (
+        target_pct / fraction_scale if fraction_scale == 100.0 else target_pct
+    )
     distances = (pd.to_numeric(df[fraction_col], errors="coerce") - target_value).abs()
     idx = distances.idxmin()
     best_distance = float(distances.loc[idx])
@@ -461,11 +487,20 @@ def infer_n_unpaved_from_table(
     edges_col: str,
     fraction_scale: float,
 ) -> Tuple[int, str]:
-    fraction_pct = pd.to_numeric(panel_b_df[fraction_col], errors="coerce") * fraction_scale
+    fraction_pct = (
+        pd.to_numeric(panel_b_df[fraction_col], errors="coerce") * fraction_scale
+    )
     edges = pd.to_numeric(panel_b_df[edges_col], errors="coerce")
-    valid = np.isfinite(fraction_pct) & np.isfinite(edges) & (fraction_pct > 0) & (edges > 0)
+    valid = (
+        np.isfinite(fraction_pct)
+        & np.isfinite(edges)
+        & (fraction_pct > 0)
+        & (edges > 0)
+    )
     if not valid.any():
-        raise ValueError("Cannot infer n_unpaved because Panel B table has no positive paving rows.")
+        raise ValueError(
+            "Cannot infer n_unpaved because Panel B table has no positive paving rows."
+        )
 
     preferred_pcts = [1.0, 2.0, 5.0, 0.1]
     for preferred_pct in preferred_pcts:
@@ -480,7 +515,9 @@ def infer_n_unpaved_from_table(
     return int(np.median(estimates)), "median across positive paving rows"
 
 
-def format_pct_for_label(value: float, decimals_if_small: int = 2, default_decimals: int = 1) -> str:
+def format_pct_for_label(
+    value: float, decimals_if_small: int = 2, default_decimals: int = 1
+) -> str:
     if abs(value) < 0.1:
         return f"{value:.{decimals_if_small}f}%"
     return f"{value:.{default_decimals}f}%"
@@ -498,14 +535,34 @@ def prepare_panel_b(
     log(f"8) {panel_b_path.name} fields: {columns}")
 
     fraction_col = find_column(columns, ["paving", "fraction"])
-    edges_col = find_column(columns, ["n_edges", "paved"]) or find_column(columns, ["edges", "paved"])
-    guided_col = "recovery_guided" if "recovery_guided" in columns else find_column(columns, ["recovery", "guided"])
-    ni_only_col = "recovery_ni_only" if "recovery_ni_only" in columns else find_column(columns, ["recovery", "ni"])
-    cv_only_col = "recovery_cv_only" if "recovery_cv_only" in columns else find_column(columns, ["recovery", "cv"])
-    random_mean_col = (
-        "recovery_rand_mean" if "recovery_rand_mean" in columns else find_column(columns, ["recovery", "rand"])
+    edges_col = find_column(columns, ["n_edges", "paved"]) or find_column(
+        columns, ["edges", "paved"]
     )
-    random_std_col = "recovery_rand_std" if "recovery_rand_std" in columns else find_column(columns, ["std"])
+    guided_col = (
+        "recovery_guided"
+        if "recovery_guided" in columns
+        else find_column(columns, ["recovery", "guided"])
+    )
+    ni_only_col = (
+        "recovery_ni_only"
+        if "recovery_ni_only" in columns
+        else find_column(columns, ["recovery", "ni"])
+    )
+    cv_only_col = (
+        "recovery_cv_only"
+        if "recovery_cv_only" in columns
+        else find_column(columns, ["recovery", "cv"])
+    )
+    random_mean_col = (
+        "recovery_rand_mean"
+        if "recovery_rand_mean" in columns
+        else find_column(columns, ["recovery", "rand"])
+    )
+    random_std_col = (
+        "recovery_rand_std"
+        if "recovery_rand_std" in columns
+        else find_column(columns, ["std"])
+    )
 
     required = {
         "paving fraction": fraction_col,
@@ -519,10 +576,14 @@ def prepare_panel_b(
     if missing:
         raise ValueError("Missing Panel B fields: " + ", ".join(missing))
 
-    fraction_scale, fraction_unit = infer_scale(panel_b_df[fraction_col], "paving_fraction")
+    fraction_scale, fraction_unit = infer_scale(
+        panel_b_df[fraction_col], "paving_fraction"
+    )
     guided_scale, guided_unit = infer_scale(panel_b_df[guided_col], guided_col)
     cv_scale, cv_unit = infer_scale(panel_b_df[cv_only_col], cv_only_col)
-    random_scale, random_unit = infer_scale(panel_b_df[random_mean_col], random_mean_col)
+    random_scale, random_unit = infer_scale(
+        panel_b_df[random_mean_col], random_mean_col
+    )
     ni_scale, ni_unit = infer_scale(panel_b_df[ni_only_col], ni_only_col)
 
     log(
@@ -531,7 +592,9 @@ def prepare_panel_b(
         f"ni_only={ni_only_col}, cv_only={cv_only_col}, random_mean={random_mean_col}, "
         f"random_std={random_std_col}"
     )
-    log(f"10) Paving fraction unit inference: {fraction_unit} (scale factor to % = {fraction_scale:.1f})")
+    log(
+        f"10) Paving fraction unit inference: {fraction_unit} (scale factor to % = {fraction_scale:.1f})"
+    )
 
     inferred_n_unpaved, inference_note = infer_n_unpaved_from_table(
         panel_b_df, fraction_col, edges_col, fraction_scale
@@ -545,14 +608,22 @@ def prepare_panel_b(
     )
     if network_stats_path is not None:
         external_stats = json.loads(network_stats_path.read_text(encoding="utf-8"))
-        log(f"   Auxiliary network_total_stats.json candidate: {json.dumps(external_stats, ensure_ascii=False)}")
+        log(
+            f"   Auxiliary network_total_stats.json candidate: {json.dumps(external_stats, ensure_ascii=False)}"
+        )
         external_n_unpaved = external_stats.get("n_unpaved")
         if external_n_unpaved is not None:
             external_n_unpaved = int(external_n_unpaved)
             diff = abs(external_n_unpaved - inferred_n_unpaved)
             tolerance = max(50, int(round(external_n_unpaved * 0.005)))
             if diff <= tolerance:
-                network_stats.update({k: int(v) for k, v in external_stats.items() if isinstance(v, (int, float))})
+                network_stats.update(
+                    {
+                        k: int(v)
+                        for k, v in external_stats.items()
+                        if isinstance(v, (int, float))
+                    }
+                )
                 network_stats["n_unpaved"] = external_n_unpaved
                 log(
                     f"   Auxiliary n_unpaved={external_n_unpaved:,} is consistent with the current paving table; "
@@ -560,11 +631,16 @@ def prepare_panel_b(
                 )
                 if quadrant_path is not None:
                     quadrant_df = pd.read_csv(quadrant_path)
-                    quadrant_sum = int(pd.to_numeric(quadrant_df["n_edges"], errors="coerce").sum())
+                    quadrant_sum = int(
+                        pd.to_numeric(quadrant_df["n_edges"], errors="coerce").sum()
+                    )
                     high_ni_unpaved = int(
                         pd.to_numeric(
                             quadrant_df.loc[
-                                quadrant_df["quadrant"].astype(str).str.contains("High NI", na=False), "n_edges"
+                                quadrant_df["quadrant"]
+                                .astype(str)
+                                .str.contains("High NI", na=False),
+                                "n_edges",
                             ],
                             errors="coerce",
                         ).sum()
@@ -584,10 +660,14 @@ def prepare_panel_b(
                     f"(inferred {inferred_n_unpaved:,}); ignoring auxiliary stats for this redraw."
                 )
     else:
-        log("   No auxiliary network_total_stats.json candidate was found for this data version.")
+        log(
+            "   No auxiliary network_total_stats.json candidate was found for this data version."
+        )
 
     max_guided_vs_ni_gap_pp = float(
-        (panel_b_df[guided_col] * guided_scale - panel_b_df[ni_only_col] * ni_scale).abs().max()
+        (panel_b_df[guided_col] * guided_scale - panel_b_df[ni_only_col] * ni_scale)
+        .abs()
+        .max()
     )
     log(
         f"   Guided vs NI-only maximum absolute gap = {max_guided_vs_ni_gap_pp:.3f} percentage points; "
@@ -600,14 +680,18 @@ def prepare_panel_b(
         row = match_fraction_row(panel_b_df, fraction_col, target_pct, fraction_scale)
         actual_pct = float(row[fraction_col]) * fraction_scale
         n_edges_data = int(row[edges_col])
-        expected_edges = int(round(int(network_stats["n_unpaved"]) * target_pct / 100.0))
+        expected_edges = int(
+            round(int(network_stats["n_unpaved"]) * target_pct / 100.0)
+        )
         guided_pct = float(row[guided_col]) * guided_scale
         cv_pct = float(row[cv_only_col]) * cv_scale
         random_pct = float(row[random_mean_col]) * random_scale
         random_pct_rounded_1dp = round(random_pct, 1)
         leverage_raw = np.nan if random_pct <= 0 else guided_pct / random_pct
         leverage_rounded = (
-            np.nan if random_pct_rounded_1dp <= 0 else guided_pct / random_pct_rounded_1dp
+            np.nan
+            if random_pct_rounded_1dp <= 0
+            else guided_pct / random_pct_rounded_1dp
         )
         key_rows.append(
             {
@@ -648,7 +732,9 @@ def prepare_panel_b(
 
     warnings = []
     if fraction_unit != "0-1 proportion":
-        warnings.append(f"paving_fraction inferred as {fraction_unit}, not the expected 0-1 scale")
+        warnings.append(
+            f"paving_fraction inferred as {fraction_unit}, not the expected 0-1 scale"
+        )
     if guided_unit != "0-1 proportion":
         warnings.append(f"{guided_col} inferred as {guided_unit}")
     if random_unit != "0-1 proportion":
@@ -704,7 +790,9 @@ def plot_panel_a(ax: plt.Axes, panel_a: Dict[str, object]) -> None:
     periods = panel_a["periods"]
     legend_handles = []
 
-    reference_curve = curve_df[curve_df["period"] == periods[0]].sort_values("quantile_pct")
+    reference_curve = curve_df[curve_df["period"] == periods[0]].sort_values(
+        "quantile_pct"
+    )
     ax.plot(
         reference_curve["quantile_pct"],
         reference_curve["jaccard_pct"],
@@ -715,9 +803,10 @@ def plot_panel_a(ax: plt.Axes, panel_a: Dict[str, object]) -> None:
         zorder=2.0,
     )
 
-    # Draw the widest, most transparent line first so the overlap itself becomes visible.
     for period in sorted(periods, reverse=True):
-        period_curve = curve_df[curve_df["period"] == period].sort_values("quantile_pct")
+        period_curve = curve_df[curve_df["period"] == period].sort_values(
+            "quantile_pct"
+        )
         style = PANEL_A_STYLES.get(
             int(period),
             {
@@ -778,7 +867,9 @@ def plot_panel_a(ax: plt.Axes, panel_a: Dict[str, object]) -> None:
     ax.set_ylabel("Jaccard overlap (%)", fontsize=LABEL_SIZE, color=TEXT_COLOR)
     style_axis(ax)
 
-    cv_change_text = ", ".join(f"{value:.1f}" for value in panel_a["annotation_cv_changes"])
+    cv_change_text = ", ".join(
+        f"{value:.1f}" for value in panel_a["annotation_cv_changes"]
+    )
     annotation = (
         f"ρ = {panel_a['annotation_rho']:.3f}"
         "\n"
@@ -796,7 +887,12 @@ def plot_panel_a(ax: plt.Axes, panel_a: Dict[str, object]) -> None:
         fontsize=TEXT_SIZE * 0.92,
         color=TEXT_COLOR,
         linespacing=1.0,
-        bbox=dict(boxstyle="round,pad=0.22", facecolor="white", edgecolor="#C9CED3", linewidth=0.8),
+        bbox=dict(
+            boxstyle="round,pad=0.22",
+            facecolor="white",
+            edgecolor="#C9CED3",
+            linewidth=0.8,
+        ),
     )
     ax.legend(
         handles=sorted(legend_handles, key=lambda handle: int(handle.get_label())),
@@ -818,12 +914,21 @@ def plot_panel_b(ax: plt.Axes, panel_b: Dict[str, object]) -> None:
     random_mean_col = panel_b["random_mean_col"]
     random_std_col = panel_b["random_std_col"]
 
-    x_pct = pd.to_numeric(df[fraction_col], errors="coerce") * float(panel_b["fraction_scale"])
-    guided_pct = pd.to_numeric(df[guided_col], errors="coerce") * float(panel_b["guided_scale"])
-    cv_pct = pd.to_numeric(df[cv_only_col], errors="coerce") * float(panel_b["cv_scale"])
-    random_pct = pd.to_numeric(df[random_mean_col], errors="coerce") * float(panel_b["random_scale"])
+    x_pct = pd.to_numeric(df[fraction_col], errors="coerce") * float(
+        panel_b["fraction_scale"]
+    )
+    guided_pct = pd.to_numeric(df[guided_col], errors="coerce") * float(
+        panel_b["guided_scale"]
+    )
+    cv_pct = pd.to_numeric(df[cv_only_col], errors="coerce") * float(
+        panel_b["cv_scale"]
+    )
+    random_pct = pd.to_numeric(df[random_mean_col], errors="coerce") * float(
+        panel_b["random_scale"]
+    )
     random_std_pct = (
-        pd.to_numeric(df[random_std_col], errors="coerce") * float(panel_b["random_scale"])
+        pd.to_numeric(df[random_std_col], errors="coerce")
+        * float(panel_b["random_scale"])
         if random_std_col is not None
         else pd.Series(np.zeros(len(df)), index=df.index)
     )
@@ -971,7 +1076,9 @@ def plot_panel_b(ax: plt.Axes, panel_b: Dict[str, object]) -> None:
     ax.set_xticks([0, 1, 2, 5, 10])
     ax.yaxis.set_major_formatter(PercentFormatter(xmax=100, decimals=0))
     ax.yaxis.set_major_locator(MultipleLocator(20))
-    ax.set_xlabel("Paving fraction of\nunpaved roads (%)", fontsize=LABEL_SIZE, color=TEXT_COLOR)
+    ax.set_xlabel(
+        "Paving fraction of\nunpaved roads (%)", fontsize=LABEL_SIZE, color=TEXT_COLOR
+    )
     ax.set_ylabel("Network recovery rate (%)", fontsize=LABEL_SIZE, color=TEXT_COLOR)
     style_axis(ax)
     ax.text(
@@ -1068,7 +1175,7 @@ def main() -> int:
 if __name__ == "__main__":
     try:
         raise SystemExit(main())
-    except Exception as exc:  # pragma: no cover
+    except Exception as exc:
         message = f"ERROR: {exc}"
         print(message, file=sys.stderr)
         if LOG_LINES:

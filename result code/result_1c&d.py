@@ -28,7 +28,6 @@ import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from matplotlib.ticker import MultipleLocator, PercentFormatter
 
-
 FONT_SIZE = 9.0
 THRESHOLD = 50.0
 PNG_DPI = 600
@@ -50,10 +49,18 @@ TEXT_COLOR = "#222222"
 SCRIPT_PATH = Path(__file__).resolve()
 OUT_DIR = SCRIPT_PATH.parent
 PROJECT_ROOT = SCRIPT_PATH.parents[2]
-RESULT1_DIR = PROJECT_ROOT / "过程文件" / "result" / "result1"
+RESULT1_DIR = PROJECT_ROOT / "process_files" / "result" / "result1"
 
-PAIR_CSV = RESULT1_DIR / "finding3_4_city_pair_travel_time_cumulative" / "within_country_city_pairs_travel_time_normal_vs_extreme.csv"
-COUNTRY_STATS_CSV = RESULT1_DIR / "finding5_city_district_speed_efficiency_spatial" / "city_district_stats_by_country.csv"
+PAIR_CSV = (
+    RESULT1_DIR
+    / "finding3_4_city_pair_travel_time_cumulative"
+    / "within_country_city_pairs_travel_time_normal_vs_extreme.csv"
+)
+COUNTRY_STATS_CSV = (
+    RESULT1_DIR
+    / "finding5_city_district_speed_efficiency_spatial"
+    / "city_district_stats_by_country.csv"
+)
 
 SCATTER_PNG = OUT_DIR / "result1_2_pair_scatter_transparent.png"
 SCATTER_PDF = OUT_DIR / "result1_2_pair_scatter_transparent.pdf"
@@ -120,18 +127,21 @@ def load_data(logger: Logger) -> tuple[pd.DataFrame, pd.DataFrame]:
     return pairs, stats
 
 
-def prepare_data(logger: Logger, pairs: pd.DataFrame, stats: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+def prepare_data(
+    logger: Logger, pairs: pd.DataFrame, stats: pd.DataFrame
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     valid_pairs = pairs.loc[pairs["increase_pct"].notna()].copy()
-    joined = valid_pairs.merge(stats[["country", "road_deg_mean"]], on="country", how="inner")
-    joined = joined.replace([np.inf, -np.inf], np.nan).dropna(subset=["increase_pct", "road_deg_mean"])
+    joined = valid_pairs.merge(
+        stats[["country", "road_deg_mean"]], on="country", how="inner"
+    )
+    joined = joined.replace([np.inf, -np.inf], np.nan).dropna(
+        subset=["increase_pct", "road_deg_mean"]
+    )
 
-    country_means = (
-        joined.groupby("country", as_index=False)
-        .agg(
-            road_deg_mean=("road_deg_mean", "first"),
-            mean_increase_pct=("increase_pct", "mean"),
-            n_pairs=("increase_pct", "size"),
-        )
+    country_means = joined.groupby("country", as_index=False).agg(
+        road_deg_mean=("road_deg_mean", "first"),
+        mean_increase_pct=("increase_pct", "mean"),
+        n_pairs=("increase_pct", "size"),
     )
 
     severe_share = float((joined["increase_pct"] > THRESHOLD).mean() * 100.0)
@@ -167,12 +177,16 @@ def style_axes(ax: plt.Axes) -> None:
 
 
 def save_figure(fig: plt.Figure, png_path: Path, pdf_path: Path) -> None:
-    fig.savefig(png_path, dpi=PNG_DPI, transparent=True, bbox_inches="tight", pad_inches=0.03)
+    fig.savefig(
+        png_path, dpi=PNG_DPI, transparent=True, bbox_inches="tight", pad_inches=0.03
+    )
     fig.savefig(pdf_path, transparent=True, bbox_inches="tight", pad_inches=0.03)
     plt.close(fig)
 
 
-def plot_scatter(joined: pd.DataFrame, country_means: pd.DataFrame, logger: Logger) -> None:
+def plot_scatter(
+    joined: pd.DataFrame, country_means: pd.DataFrame, logger: Logger
+) -> None:
     fig, ax = plt.subplots(
         figsize=(cm_to_inch(SCATTER_WIDTH_CM), cm_to_inch(SCATTER_HEIGHT_CM))
     )
@@ -234,7 +248,13 @@ def plot_scatter(joined: pd.DataFrame, country_means: pd.DataFrame, logger: Logg
     fit_sample_x1 = x_max * 0.88
     fit_label_x = x_max * 0.96
     fit_label_y = slope * fit_sample_x1 + intercept + 2.0
-    ax.plot([fit_sample_x0, fit_sample_x1], [fit_label_y, fit_label_y], color=FIT_COLOR, lw=1.95, zorder=5)
+    ax.plot(
+        [fit_sample_x0, fit_sample_x1],
+        [fit_label_y, fit_label_y],
+        color=FIT_COLOR,
+        lw=1.95,
+        zorder=5,
+    )
     ax.text(
         fit_label_x,
         fit_label_y,
@@ -271,8 +291,26 @@ def plot_scatter(joined: pd.DataFrame, country_means: pd.DataFrame, logger: Logg
     )
 
     legend_handles = [
-        Line2D([0], [0], marker="o", color="none", markerfacecolor=PAIR_COLOR, alpha=0.35, markersize=4.8, label="Pairs"),
-        Line2D([0], [0], marker="o", color="none", markerfacecolor=MEAN_COLOR, markeredgecolor="white", markersize=5.8, label="Means"),
+        Line2D(
+            [0],
+            [0],
+            marker="o",
+            color="none",
+            markerfacecolor=PAIR_COLOR,
+            alpha=0.35,
+            markersize=4.8,
+            label="Pairs",
+        ),
+        Line2D(
+            [0],
+            [0],
+            marker="o",
+            color="none",
+            markerfacecolor=MEAN_COLOR,
+            markeredgecolor="white",
+            markersize=5.8,
+            label="Means",
+        ),
     ]
     fig.legend(
         handles=legend_handles,
@@ -288,7 +326,9 @@ def plot_scatter(joined: pd.DataFrame, country_means: pd.DataFrame, logger: Logg
     logger.log("\n[Scatter output]")
     logger.log(f"Saved PNG: {SCATTER_PNG}")
     logger.log(f"Saved PDF: {SCATTER_PDF}")
-    logger.log(f"Scatter figure size: {SCATTER_WIDTH_CM:.1f} cm x {SCATTER_HEIGHT_CM:.1f} cm")
+    logger.log(
+        f"Scatter figure size: {SCATTER_WIDTH_CM:.1f} cm x {SCATTER_HEIGHT_CM:.1f} cm"
+    )
 
 
 def plot_ecdf(joined: pd.DataFrame, logger: Logger) -> None:

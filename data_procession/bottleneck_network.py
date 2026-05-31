@@ -38,17 +38,17 @@ from scipy.spatial import cKDTree
 
 warnings.filterwarnings("ignore")
 
-# ── Paths ─────────────────────────────────────────────────────────────────────
+
 _DEFAULT_BASE = Path("<BASE_DIR>")
 
-# ── Road network ──────────────────────────────────────────────────────────────
+
 MIN_ROAD_LENGTH_KM = 0.1
 SNAP_THRESHOLD_DEG = 0.0045
 BORDER_DEG = 0.5
 CROSS_BORDER_DIST_DEG = 0.20
 CROSS_BORDER_SPEED = 40.0
 
-# ── WorldPop demand nodes ─────────────────────────────────────────────────────
+
 WORLDPOP_GRID_DEG = 0.5
 WORLDPOP_POP_THRESH = 50_000
 WORLDPOP_POP_THRESH_RURAL = 1_000
@@ -56,7 +56,7 @@ N_RURAL_NODES = 3_000
 WORLDPOP_RURAL_SEED = 42
 WORLDPOP_SNAP_MAX_DEG = 0.5
 
-# ── Network analysis ──────────────────────────────────────────────────────────
+
 GRAVITY_ALPHA = 2.0
 UNREACHABLE = 1e8
 CV_MIN_THRESHOLD = 0.02
@@ -115,9 +115,6 @@ FOLDER_TO_ISO = {
 }
 
 
-# =============================================================================
-# STEP 1 — BUILD PAN-AFRICAN GRAPH
-# =============================================================================
 def _merge_endpoints(pts_arr, same_pairs, threshold):
     N = len(pts_arr)
     parent = list(range(N))
@@ -336,9 +333,6 @@ def build_africa_graph(roads_dir: Path, speed_dir: Path, checkpoint_path: Path):
     return G0, G1, all_nc
 
 
-# =============================================================================
-# STEP 2 — WORLDPOP DEMAND NODES
-# =============================================================================
 def sample_worldpop_nodes(pop_dir: Path, G0: nx.Graph, all_nc: dict):
     print(f"\n{'='*60}\n  STEP 2 — Sample WorldPop Demand Nodes (stratified)\n{'='*60}")
     nids = list(all_nc.keys())
@@ -389,7 +383,6 @@ def sample_worldpop_nodes(pop_dir: Path, G0: nx.Graph, all_nc: dict):
                         agg = np.where(agg == src.nodata * scale**2, 0.0, agg)
                     agg = np.where(np.isfinite(agg), agg, 0.0)
 
-                    # Urban tier — snap immediately
                     mask_u = agg > WORLDPOP_POP_THRESH
                     if mask_u.any():
                         pts_u = np.column_stack(
@@ -408,7 +401,6 @@ def sample_worldpop_nodes(pop_dir: Path, G0: nx.Graph, all_nc: dict):
                                 node_pop[sn] = node_pop.get(sn, 0.0) + float(p)
                                 node_lon[sn], node_lat[sn] = lc, la
 
-                    # Rural tier — collect candidates
                     mask_r = (agg > WORLDPOP_POP_THRESH_RURAL) & (
                         agg <= WORLDPOP_POP_THRESH
                     )
@@ -422,7 +414,6 @@ def sample_worldpop_nodes(pop_dir: Path, G0: nx.Graph, all_nc: dict):
         except Exception:
             continue
 
-    # Sample rural pool
     r_lons = np.array(rural_lons, dtype=np.float64)
     r_lats = np.array(rural_lats, dtype=np.float64)
     r_pops = np.array(rural_pops, dtype=np.float64)
@@ -453,9 +444,6 @@ def sample_worldpop_nodes(pop_dir: Path, G0: nx.Graph, all_nc: dict):
     return demand_nodes
 
 
-# =============================================================================
-# STEPS 3–6 — IGRAPH / ACCESSIBILITY / NI / SCORES
-# =============================================================================
 def build_igraphs(G0: nx.Graph, G1: nx.Graph):
     node_list = list(G0.nodes())
     node_idx = {n: i for i, n in enumerate(node_list)}
@@ -538,9 +526,6 @@ def compute_scores(w0_arr, w1_arr, gbc):
     return cv_arr, bottleneck, unpaved_mask
 
 
-# =============================================================================
-# STEP 7 — SAVE EDGE SCORES + 2×2 MATRIX
-# =============================================================================
 def save_edge_scores(
     edge_list,
     node_list,
@@ -604,9 +589,6 @@ def save_edge_scores(
     print("  Saved → 03_2x2_matrix.csv")
 
 
-# =============================================================================
-# MAIN
-# =============================================================================
 def main():
     parser = argparse.ArgumentParser(
         description="Bottleneck Network Analysis (Steps 1–7)"
@@ -631,13 +613,11 @@ def main():
         checkpoint.unlink()
         print("  [--rebuild] Deleted existing checkpoint.")
 
-    # Steps 1–2
     G0, G1, all_nc = build_africa_graph(roads_dir, speed_dir, checkpoint)
     demand_nodes = sample_worldpop_nodes(pop_dir, G0, all_nc)
     if len(demand_nodes) < 10:
         raise RuntimeError("Too few demand nodes — check WorldPop data.")
 
-    # Step 3
     print(f"\n{'='*60}\n  STEP 3 — Build igraph Objects\n{'='*60}")
     node_list, node_idx, edge_list, edges_ig, w0_arr, w1_arr, g0_ig, g1_ig = (
         build_igraphs(G0, G1)
@@ -646,7 +626,6 @@ def main():
     gc.collect()
     print(f"  igraph built: {g0_ig.vcount():,} nodes  {g0_ig.ecount():,} edges")
 
-    # Snap demand nodes to igraph indices
     city_ig_idx, pops = [], []
     for dn in demand_nodes:
         if dn["snap_node"] in node_idx:
@@ -654,7 +633,6 @@ def main():
             pops.append(dn["pop"])
     print(f"  Demand nodes in LCC: {len(city_ig_idx):,}")
 
-    # Step 4
     print(f"\n{'='*60}\n  STEP 4 — Baseline Accessibility\n{'='*60}")
     A_normal, n_reach = compute_accessibility(g0_ig, city_ig_idx, pops)
     A_extreme, _ = compute_accessibility(g1_ig, city_ig_idx, pops)
@@ -664,18 +642,15 @@ def main():
         f"  Climate-driven accessibility loss: {100*(A_normal-A_extreme)/A_normal:.1f}%"
     )
 
-    # Step 5
     d0_mat = np.array(
         g0_ig.distances(source=city_ig_idx, target=city_ig_idx, weights="weight"),
         dtype=np.float64,
     )
     gbc = compute_gravity_bc(g0_ig, city_ig_idx, pops, d0_mat)
 
-    # Step 6
     print(f"\n{'='*60}\n  STEP 6 — Climate Vulnerability + Bottleneck Score\n{'='*60}")
     cv_arr, bottleneck, unpaved_mask = compute_scores(w0_arr, w1_arr, gbc)
 
-    # Step 7
     print(f"\n{'='*60}\n  STEP 7 — Save Edge Scores\n{'='*60}")
     save_edge_scores(
         edge_list,
@@ -690,7 +665,6 @@ def main():
         out_dir,
     )
 
-    # Serialise experiment state for paving_experiment.py
     state = {
         "g0_ig": g0_ig,
         "g1_ig": g1_ig,
@@ -709,7 +683,6 @@ def main():
         pickle.dump(state, f, protocol=pickle.HIGHEST_PROTOCOL)
     print(f"\n  Saved → experiment_state.pkl")
 
-    # Save lightweight stats for plot_paving.py
     stats = {
         "n_total": g0_ig.ecount(),
         "n_unpaved": int(unpaved_mask.sum()),

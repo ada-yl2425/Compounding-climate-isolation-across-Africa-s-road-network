@@ -50,18 +50,16 @@ from scipy.stats import spearmanr
 
 warnings.filterwarnings("ignore")
 
-# =============================================================================
-# CONFIGURATION — mirror network_pipeline.py settings
-# =============================================================================
+
 BASE_DIR_DEFAULT = Path("path/to/base")
 
-SNAP_THRESHOLD_DEG = 0.0045  # ~500 m — same as pipeline
+SNAP_THRESHOLD_DEG = 0.0045
 MIN_ROAD_LENGTH_KM = 0.1
 BLOCK_PROB_THRESH = 0.5
-UNREACHABLE_H = 1e6  # travel-time sentinel for unreachable nodes (hours)
-MAX_HEALTH_SNAP_KM = 50.0  # discard health facilities >50 km from any road node
+UNREACHABLE_H = 1e6
+MAX_HEALTH_SNAP_KM = 50.0
 
-# WorldPop ISO-3 prefix → country folder mapping
+
 WORLDPOP_PREFIX = {
     "Algeria": "dza",
     "Angola": "ago",
@@ -110,15 +108,12 @@ WORLDPOP_PREFIX = {
     "Togo": "tgo",
     "Tunisia": "tun",
     "Uganda": "uga",
-    "WestSahara": "",  # no WorldPop TIF — will use uniform weight
+    "WestSahara": "",
     "Zambia": "zmb",
     "Zimbabwe": "zwe",
 }
 
 
-# =============================================================================
-# GRAPH BUILDING (simplified, unpaved-only, matching pipeline)
-# =============================================================================
 def _merge_endpoints(pts_arr, same_pairs, threshold):
     N = len(pts_arr)
     parent = list(range(N))
@@ -200,7 +195,6 @@ def build_graphs(shp_path: Path, iri_path: Path):
     v_n_med = df_iri["V_normal"].median()
     v_e_med = v_n_med
 
-    # Endpoint extraction
     coords_list, road_ep_idx, same_pairs = [], [], set()
     for geom in gdf.geometry:
         if geom is None or geom.is_empty:
@@ -260,9 +254,6 @@ def build_graphs(shp_path: Path, iri_path: Path):
     return G0, G1, node_coords
 
 
-# =============================================================================
-# STEP 1  NODE-LEVEL ACCESSIBILITY
-# =============================================================================
 def load_health_facilities(health_csv: Path) -> pd.DataFrame:
     df = pd.read_csv(health_csv)
     df = df.dropna(subset=["lon", "lat"])
@@ -288,7 +279,6 @@ def snap_health_to_network(health_df: pd.DataFrame, node_coords: dict) -> list[i
         if dist_km <= MAX_HEALTH_SNAP_KM:
             snapped.append(net_nodes[idx])
 
-    # De-duplicate: multiple facilities may snap to the same network node
     return list(set(snapped))
 
 
@@ -308,11 +298,6 @@ def compute_nearest_health_time(
     return dict(lengths)
 
 
-# =============================================================================
-# STEP 2  POPULATION WEIGHTING
-# =============================================================================
-# Maximum distance (km) to assign a population pixel to a road node.
-# Pixels farther than this from any road node are excluded (e.g. deep desert).
 MAX_POP_SNAP_KM = 50.0
 
 
@@ -357,20 +342,18 @@ def aggregate_population_to_nodes(
             nodata = src.nodata
             transform = src.transform
 
-        # --- mask nodata / negative sentinels (WorldPop uses -99999) ---
         if nodata is not None:
             data[data == nodata] = 0.0
         data[data < 0] = 0.0
         data = np.nan_to_num(data, nan=0.0)
 
-        # --- pixel coordinates (centre of each populated cell) ---
         rows, cols = np.where(data > 0)
         if len(rows) == 0:
             print("    [WARN] Population raster has no positive values")
             return np.zeros(len(node_list), dtype=float)
 
-        pix_lons = transform.c + (cols + 0.5) * transform.a  # lon
-        pix_lats = transform.f + (rows + 0.5) * transform.e  # lat  (e < 0)
+        pix_lons = transform.c + (cols + 0.5) * transform.a
+        pix_lats = transform.f + (rows + 0.5) * transform.e
         pix_pop = data[rows, cols].astype(float)
 
         print(
@@ -378,14 +361,12 @@ def aggregate_population_to_nodes(
             f"total pop: {pix_pop.sum():,.0f}"
         )
 
-        # --- nearest-node assignment via cKDTree ---
-        node_xy = np.column_stack([lons, lats])  # (N_nodes, 2)
-        pix_xy = np.column_stack([pix_lons, pix_lats])  # (N_pixels, 2)
+        node_xy = np.column_stack([lons, lats])
+        pix_xy = np.column_stack([pix_lons, pix_lats])
         tree = cKDTree(node_xy)
 
-        dists, nearest_idx = tree.query(pix_xy, workers=-1)  # workers=-1 = all CPUs
+        dists, nearest_idx = tree.query(pix_xy, workers=-1)
 
-        # discard pixels too far from any road node (isolated area)
         threshold_deg = MAX_POP_SNAP_KM / 111.0
         valid = dists <= threshold_deg
         nearest_idx = nearest_idx[valid]
@@ -397,7 +378,6 @@ def aggregate_population_to_nodes(
             f"({valid.mean()*100:.1f}%)"
         )
 
-        # --- accumulate population per node ---
         pop_per_node = np.zeros(len(node_list), dtype=float)
         np.add.at(pop_per_node, nearest_idx, pix_pop_valid)
 
@@ -427,7 +407,6 @@ def population_weighted_stats(t: np.ndarray, pop: np.ndarray, label: str) -> dic
     total_pop = pop_m.sum()
     pwmtt = float(np.sum(t_m * pop_m) / total_pop)
 
-    # Population-weighted percentiles via cumulative sum approach
     sort_idx = np.argsort(t_m)
     t_sorted = t_m[sort_idx]
     pop_sorted = pop_m[sort_idx]
@@ -448,11 +427,6 @@ def population_weighted_stats(t: np.ndarray, pop: np.ndarray, label: str) -> dic
     }
 
 
-# =============================================================================
-# STEP 2b  ISOCHRONE POPULATION COVERAGE
-# =============================================================================
-# Time thresholds (hours) for isochrone analysis.
-# WHO recommends a health facility reachable within 1–2 hours as a benchmark.
 ISOCHRONE_THRESHOLDS_H = [0.5, 1.0, 2.0, 4.0]
 
 
@@ -482,7 +456,7 @@ def isochrone_coverage(
 
     result = {}
     for T in thresholds:
-        key = f"T{int(T*60)}min"  # e.g. T120min
+        key = f"T{int(T*60)}min"
 
         reachable_n = (t_normal < T) & np.isfinite(t_normal)
         reachable_e = (t_extreme < T) & np.isfinite(t_extreme)
@@ -500,9 +474,6 @@ def isochrone_coverage(
     return result
 
 
-# =============================================================================
-# STEP 3  INEQUALITY VERIFICATION
-# =============================================================================
 def gini(x: np.ndarray) -> float:
     """Gini coefficient (ignores NaN / negative)."""
     x = x[np.isfinite(x) & (x >= 0)]
@@ -547,7 +518,6 @@ def inequality_metrics(
             "tail_gap_ratio": np.nan,
         }
 
-    # Population-weighted Gini using integer weights (rounded to nearest person)
     weights = np.round(pop_m / pop_m.min()).clip(1, 500).astype(int)
     t0_rep = np.repeat(t0_m, weights)
     t1_rep = np.repeat(t1_m, weights)
@@ -556,10 +526,8 @@ def inequality_metrics(
     gini_n = gini(t0_rep)
     gini_e = gini(t1_rep)
 
-    # Spearman: baseline accessibility vs delta
     rho, pval = spearmanr(t0_rep, dt_rep)
 
-    # Population-weighted P90 and P50 of Δt
     sort_idx = np.argsort(dt_m)
     dt_sorted = dt_m[sort_idx]
     pop_sorted = pop_m[sort_idx]
@@ -580,9 +548,6 @@ def inequality_metrics(
     }
 
 
-# =============================================================================
-# PER-COUNTRY PIPELINE
-# =============================================================================
 def process_country(
     country: str,
     base_dir: Path,
@@ -594,13 +559,11 @@ def process_country(
     prefix = WORLDPOP_PREFIX.get(country, "")
     pop_path = base_dir / "RAW/Pop_data" / f"{prefix}_ppp_2020_UNadj_constrained.tif"
 
-    # Validate inputs
     missing = [p for p in [shp_path, iri_path, hlth_path] if not p.exists()]
     if missing:
         print(f"  [SKIP] {country}: missing files: {[str(m) for m in missing]}")
         return None
 
-    # Check health CSV has data (not just header)
     health_df = load_health_facilities(hlth_path)
     if health_df.empty:
         print(
@@ -611,17 +574,14 @@ def process_country(
     print(f"\n{'='*60}\n  {country}  ({len(health_df)} health facilities)\n{'='*60}")
     t_start = time.time()
 
-    # ----- Step 1: Build graphs and compute accessibility -----
     print("  [1/3] Building road network graphs ...")
     G0, G1, node_coords = build_graphs(shp_path, iri_path)
 
-    # Extract largest connected component for G0 (use as reference graph)
     lcc_nodes = max(nx.connected_components(G0), key=len)
     G0 = G0.subgraph(lcc_nodes).copy()
     G1 = G1.subgraph(lcc_nodes).copy()
     node_coords = {k: v for k, v in node_coords.items() if k in lcc_nodes}
 
-    # Snap health facilities to network
     health_nodes = snap_health_to_network(health_df, node_coords)
     if not health_nodes:
         print(
@@ -630,14 +590,12 @@ def process_country(
         return None
     print(f"  Snapped {len(health_nodes)} unique health-facility anchor nodes")
 
-    # Multi-source Dijkstra
     print("  Computing nearest-health travel times (normal) ...")
     t_normal_map = compute_nearest_health_time(G0, health_nodes)
 
     print("  Computing nearest-health travel times (extreme) ...")
     t_extreme_map = compute_nearest_health_time(G1, health_nodes)
 
-    # Assemble per-node DataFrame
     node_list = list(node_coords.keys())
     lons = np.array([node_coords[n][0] for n in node_list])
     lats = np.array([node_coords[n][1] for n in node_list])
@@ -645,7 +603,6 @@ def process_country(
     t_extreme_arr = np.array([t_extreme_map.get(n, UNREACHABLE_H) for n in node_list])
     delta_arr = t_extreme_arr - t_normal_arr
 
-    # ----- Step 2: Population weighting -----
     print("  [2/3] Aggregating WorldPop pixels → road nodes ...")
     if pop_path.exists():
         pop_arr = aggregate_population_to_nodes(pop_path, node_list, lons, lats)
@@ -670,15 +627,12 @@ def process_country(
     node_df.to_csv(out_node_path, index=False)
     print(f"  Node-level results → {out_node_path.name}")
 
-    # Population-weighted stats for normal and extreme
     stats_n = population_weighted_stats(t_normal_arr, pop_arr, "normal")
     stats_e = population_weighted_stats(t_extreme_arr, pop_arr, "extreme")
     stats_dt = population_weighted_stats(delta_arr, pop_arr, "delta")
 
-    # Isochrone population coverage at multiple time thresholds
     iso = isochrone_coverage(t_normal_arr, t_extreme_arr, pop_arr)
 
-    # ----- Step 3: Inequality metrics -----
     print("  [3/3] Computing inequality metrics ...")
     ineq = inequality_metrics(t_normal_arr, t_extreme_arr, pop_arr)
 
@@ -730,9 +684,6 @@ def process_country(
     return summary
 
 
-# =============================================================================
-# MAIN
-# =============================================================================
 def main():
     parser = argparse.ArgumentParser(
         description="Compute health accessibility under climate shock"
@@ -772,13 +723,11 @@ def main():
         print("\nNo results produced. Check that health CSVs have data.")
         return
 
-    # Country-level summary
     df_country = pd.DataFrame(all_summaries)
     country_path = output_dir / "country_accessibility_summary.csv"
     df_country.to_csv(country_path, index=False)
     print(f"\nCountry summary → {country_path}")
 
-    # Africa-level aggregation (population-weighted)
     finite = df_country.dropna(
         subset=["pwmtt_normal", "pwmtt_extreme", "total_population"]
     )

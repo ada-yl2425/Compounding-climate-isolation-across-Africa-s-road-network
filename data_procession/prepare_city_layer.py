@@ -19,9 +19,7 @@ import pandas as pd
 
 warnings.filterwarnings("ignore")
 
-# =============================================================================
-# CONFIGURATION
-# =============================================================================
+
 BASE_DIR = Path("path/to")
 ROADS_DIR = BASE_DIR / "RAW/Road_data"
 SPEED_DIR = BASE_DIR / "road_speed_cordex"
@@ -160,7 +158,6 @@ def process_country(country: str):
         gid_col, name_col, prov_col = "GID_1", "NAME_1", "NAME_1"
     print(f"  Districts: {len(gadm):,}")
 
-    # Spatial assignment based on road segment centroids
     centroids = roads.copy()
     centroids["geometry"] = roads.geometry.centroid
     gadm_cols = list(dict.fromkeys([gid_col, name_col, prov_col, "geometry"]))
@@ -175,7 +172,6 @@ def process_country(country: str):
     roads["_district_name"] = joined[name_col]
     roads["_province_name"] = joined[prov_col]
 
-    # Map outer segments to nearest district
     missing_mask = roads["_district_gid"].isna()
     if missing_mask.sum() > 0:
         gadm_cents = gadm.copy()

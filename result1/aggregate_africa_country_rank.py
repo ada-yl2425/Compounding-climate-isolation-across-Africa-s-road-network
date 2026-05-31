@@ -33,16 +33,13 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 
-# =============================================================================
-# CONFIGURATION  (override via --base-dir at runtime)
-# =============================================================================
 BASE_DIR = Path("path/to/your/base/directory")
 SPEED_DIR = BASE_DIR / "road_speed_cordex"
 NODES_CSV = BASE_DIR / "web/africa_layer/africa_nodes.csv"
 OD_PAIRS_CSV = BASE_DIR / "web/network_results/africa_layer/africa_od_pairs.csv"
 OUTPUT_DIR = BASE_DIR / "web/network_results/africa_layer"
 
-# country_folder name → ISO-3 (matches FOLDER_TO_ISO in run_africa_layer.py)
+
 FOLDER_TO_ISO = {
     "Algeria": "DZA",
     "Angola": "AGO",
@@ -97,9 +94,6 @@ FOLDER_TO_ISO = {
 }
 
 
-# =============================================================================
-# STEP 1 — Road-level speed degradation per country
-# =============================================================================
 def compute_road_degradation(speed_dir: Path) -> pd.DataFrame:
     print(f"\n[1] Computing road-level speed degradation from {speed_dir.name}/")
     rows = []
@@ -134,9 +128,6 @@ def compute_road_degradation(speed_dir: Path) -> pd.DataFrame:
     return result
 
 
-# =============================================================================
-# STEP 2 — OD-level travel-time degradation per country
-# =============================================================================
 def compute_od_degradation(od_pairs_csv: Path, nodes_csv: Path) -> pd.DataFrame:
     print(f"\n[2] Computing OD-level degradation from {od_pairs_csv.name}")
 
@@ -149,7 +140,6 @@ def compute_od_degradation(od_pairs_csv: Path, nodes_csv: Path) -> pd.DataFrame:
     connected = od[od["conn_type"] == "connected"].copy()
     print(f"  Connected pairs: {len(connected):,} / {len(od):,} total")
 
-    # Attribute each pair to both endpoint countries
     rows = []
     for _, r in connected.iterrows():
         inc = r["increase_pct"]
@@ -179,9 +169,6 @@ def compute_od_degradation(od_pairs_csv: Path, nodes_csv: Path) -> pd.DataFrame:
     return grouped
 
 
-# =============================================================================
-# STEP 3 — Merge and compute amplification
-# =============================================================================
 def compute_amplification(road_df: pd.DataFrame, od_df: pd.DataFrame) -> pd.DataFrame:
     print("\n[3] Computing amplification ratios")
     merged = od_df.merge(road_df, on=["iso3", "country_folder"], how="inner")
@@ -190,7 +177,6 @@ def compute_amplification(road_df: pd.DataFrame, od_df: pd.DataFrame) -> pd.Data
         merged["od_mean_increase_pct"] / merged["road_mean_speed_drop_pct"]
     )
 
-    # Continent baseline for reference
     continent_od_mean = merged["od_mean_increase_pct"].mean()
     continent_road_mean = merged["road_mean_speed_drop_pct"].mean()
     continent_amp = continent_od_mean / continent_road_mean
@@ -201,9 +187,6 @@ def compute_amplification(road_df: pd.DataFrame, od_df: pd.DataFrame) -> pd.Data
     return merged
 
 
-# =============================================================================
-# MAIN
-# =============================================================================
 def main():
     import argparse
 
@@ -225,7 +208,6 @@ def main():
     od_df = compute_od_degradation(OD_PAIRS_CSV, NODES_CSV)
     merged = compute_amplification(road_df, od_df)
 
-    # Table 1: efficiency loss ranking
     loss_cols = [
         "iso3",
         "country_folder",
@@ -256,7 +238,6 @@ def main():
             f"  amp: {r['od_mean_increase_pct']/r['road_mean_speed_drop_pct']:.2f}x"
         )
 
-    # Table 2: amplification ranking
     amp_cols = [
         "iso3",
         "country_folder",

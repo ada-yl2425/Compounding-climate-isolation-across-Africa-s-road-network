@@ -18,7 +18,6 @@ from qgis.core import (
     QgsVectorLayer,
 )
 
-
 ROOT = Path(__file__).resolve().parent
 WORLD_PATH = ROOT / "world_map.gpkg"
 AFRICA_EXTENT = QgsRectangle(-19.24, -36.63, 52.70, 39.14)
@@ -81,11 +80,41 @@ AFRICA_ISO_A3 = [
 ]
 
 TIER_SPECS = [
-    {"label": "Priority 1", "upper_share": 0.01, "color": "#701813", "width_mm": 0.46, "opacity": 1.00},
-    {"label": "Priority 2", "upper_share": 0.05, "color": "#9b2d25", "width_mm": 0.38, "opacity": 0.95},
-    {"label": "Priority 3", "upper_share": 0.20, "color": "#c8594d", "width_mm": 0.30, "opacity": 0.85},
-    {"label": "Priority 4", "upper_share": 0.50, "color": "#e39a91", "width_mm": 0.24, "opacity": 0.76},
-    {"label": "Priority 5", "upper_share": 1.00, "color": "#f5d8d4", "width_mm": 0.19, "opacity": 0.72},
+    {
+        "label": "Priority 1",
+        "upper_share": 0.01,
+        "color": "#701813",
+        "width_mm": 0.46,
+        "opacity": 1.00,
+    },
+    {
+        "label": "Priority 2",
+        "upper_share": 0.05,
+        "color": "#9b2d25",
+        "width_mm": 0.38,
+        "opacity": 0.95,
+    },
+    {
+        "label": "Priority 3",
+        "upper_share": 0.20,
+        "color": "#c8594d",
+        "width_mm": 0.30,
+        "opacity": 0.85,
+    },
+    {
+        "label": "Priority 4",
+        "upper_share": 0.50,
+        "color": "#e39a91",
+        "width_mm": 0.24,
+        "opacity": 0.76,
+    },
+    {
+        "label": "Priority 5",
+        "upper_share": 1.00,
+        "color": "#f5d8d4",
+        "width_mm": 0.19,
+        "opacity": 0.72,
+    },
 ]
 
 
@@ -95,7 +124,7 @@ def styled_countries() -> QgsVectorLayer:
         raise RuntimeError("Failed to load world map")
 
     iso_list = ", ".join(f"'{code}'" for code in AFRICA_ISO_A3)
-    layer.setSubsetString(f"\"ISO_A3\" IN ({iso_list})")
+    layer.setSubsetString(f'"ISO_A3" IN ({iso_list})')
 
     symbol = QgsFillSymbol.createSimple(
         {
@@ -121,7 +150,9 @@ def make_line_symbol(color: str, width_mm: float) -> QgsLineSymbol:
     )
 
 
-def make_roads_layer(data_path: Path, name: str, subset: str, color: str, width_mm: float, opacity: float) -> QgsVectorLayer:
+def make_roads_layer(
+    data_path: Path, name: str, subset: str, color: str, width_mm: float, opacity: float
+) -> QgsVectorLayer:
     layer = QgsVectorLayer(f"{data_path}|layername=bottleneck_roads", name, "ogr")
     if not layer.isValid():
         raise RuntimeError(f"Failed to load roads layer from {data_path}")
@@ -134,7 +165,9 @@ def make_roads_layer(data_path: Path, name: str, subset: str, color: str, width_
 
 
 def priority_layers(data_path: Path) -> list[QgsVectorLayer]:
-    template = QgsVectorLayer(f"{data_path}|layername=bottleneck_roads", "template", "ogr")
+    template = QgsVectorLayer(
+        f"{data_path}|layername=bottleneck_roads", "template", "ogr"
+    )
     if not template.isValid():
         raise RuntimeError(f"Failed to load roads layer from {data_path}")
 
@@ -146,7 +179,7 @@ def priority_layers(data_path: Path) -> list[QgsVectorLayer]:
     lower_rank = 1
     for idx, spec in enumerate(TIER_SPECS, start=1):
         upper_rank = max(lower_rank, int(n_features * spec["upper_share"]))
-        subset = f"\"NI_rank\" >= {lower_rank} AND \"NI_rank\" <= {upper_rank}"
+        subset = f'"NI_rank" >= {lower_rank} AND "NI_rank" <= {upper_rank}'
         layer = make_roads_layer(
             data_path=data_path,
             name=f"priority_{idx}",
@@ -170,7 +203,9 @@ def priority_layers(data_path: Path) -> list[QgsVectorLayer]:
     return layers
 
 
-def render_panel(data_path: Path, output: Path, width: int, height: int, dpi: int) -> None:
+def render_panel(
+    data_path: Path, output: Path, width: int, height: int, dpi: int
+) -> None:
     countries = styled_countries()
     roads = priority_layers(data_path)
     layers = roads + [countries]
@@ -213,8 +248,12 @@ def main() -> None:
     args = parser.parse_args()
 
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    os.environ.setdefault("PROJ_LIB", "/Applications/QGIS.app/Contents/Resources/qgis/proj")
-    os.environ.setdefault("PROJ_DATA", "/Applications/QGIS.app/Contents/Resources/qgis/proj")
+    os.environ.setdefault(
+        "PROJ_LIB", "/Applications/QGIS.app/Contents/Resources/qgis/proj"
+    )
+    os.environ.setdefault(
+        "PROJ_DATA", "/Applications/QGIS.app/Contents/Resources/qgis/proj"
+    )
 
     QgsApplication.setPrefixPath("/Applications/QGIS.app/Contents/MacOS", True)
     app = QgsApplication([], False)

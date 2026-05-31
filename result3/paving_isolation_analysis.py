@@ -40,23 +40,22 @@ import pandas as pd
 
 warnings.filterwarnings("ignore")
 
-# ── Parameters ────────────────────────────────────────────────────────────────
+
 PAVING_FRACTION = 0.05
 UNREACHABLE = 1e8
 
-SEVERE_CV = 0.5  # CV_OD > 0.5  →  ≥ 1.5× normal travel time
-EXTREME_CV = 1.0  # CV_OD > 1.0  →  ≥ 2.0× normal travel time
-REACH_H = 1.0  # 1-hour reachability circle
+SEVERE_CV = 0.5
+EXTREME_CV = 1.0
+REACH_H = 1.0
 
-# Hotspot belts (lon_min, lon_max, lat_min, lat_max)
-# Priority: first match wins, so more specific regions listed first
+
 REGIONS = [
-    ("West Africa", -18, 15, 2, 20),  # Guinea coast extended to lat 2
+    ("West Africa", -18, 15, 2, 20),
     ("North Africa", -18, 51, 20, 38),
     ("Sahel-Horn", 15, 51, 8, 22),
     ("East Africa", 28, 51, -12, 12),
     ("Central Africa", 8, 30, -5, 8),
-    ("Southern Africa", 10, 51, -35, -5),  # extended to lat -5 to cover N. Angola
+    ("Southern Africa", 10, 51, -35, -5),
 ]
 
 REGION_COLORS = {
@@ -70,9 +69,6 @@ REGION_COLORS = {
 }
 
 
-# =============================================================================
-# HELPERS
-# =============================================================================
 def assign_region(lon: float, lat: float) -> str:
     for name, lo0, lo1, la0, la1 in REGIONS:
         if lo0 <= lon <= lo1 and la0 <= lat <= la1:
@@ -183,7 +179,7 @@ def assign_countries(lons: np.ndarray, lats: np.ndarray, world_gdf):
         joined = gpd.sjoin(
             pts, world_gdf[["name", "geometry"]], how="left", predicate="within"
         )
-        # sjoin can duplicate rows if a point falls in multiple polygons; keep first
+
         joined = joined[~joined.index.duplicated(keep="first")]
         return joined["name"].fillna("Unknown").tolist()
     except Exception as e:
@@ -191,9 +187,6 @@ def assign_countries(lons: np.ndarray, lats: np.ndarray, world_gdf):
         return ["Unknown"] * len(lons)
 
 
-# =============================================================================
-# MAIN
-# =============================================================================
 def main():
     parser = argparse.ArgumentParser(description="Result 3 De-isolation Analysis")
     parser.add_argument(
@@ -214,7 +207,6 @@ def main():
 
     f = args.paving_fraction
 
-    # ── [1] Load experiment state ──────────────────────────────────────────────
     print(f"\n{'='*60}\n  Result 3 De-isolation Analysis\n{'='*60}")
     print(f"\n[1] Loading experiment_state.pkl ...")
     with open(paving_dir / "experiment_state.pkl", "rb") as fh:
@@ -227,7 +219,6 @@ def main():
     bottleneck = state["bottleneck"]
     unpaved_mask = state["unpaved_mask"]
 
-    # ── [2] Load checkpoint for city coordinates ───────────────────────────────
     print("[2] Loading 01_graph_checkpoint.pkl for city coordinates ...")
     with open(paving_dir / "01_graph_checkpoint.pkl", "rb") as fh:
         ckpt = pickle.load(fh)
@@ -245,7 +236,6 @@ def main():
     print(f"   City nodes: {n_cities:,}")
     print(f"   Unpaved edges in pool: {unpaved_mask.sum():,}")
 
-    # ── [3] OD distance matrices (cached as .npy for fast reruns) ────────────
     cache_normal = out_dir / f"cache_d_normal.npy"
     cache_extreme = out_dir / f"cache_d_extreme.npy"
     cache_paved = out_dir / f"cache_d_paved_f{int(f*1000):04d}.npy"
@@ -265,7 +255,6 @@ def main():
         d_extreme = get_distances(g1_ig, city_ig_idx)
         np.save(cache_extreme, d_extreme)
 
-        # ── Apply guided paving at fraction f ─────────────────────────────────
         unpaved_idx = np.where(unpaved_mask)[0]
         order_guided = unpaved_idx[np.argsort(-bottleneck[unpaved_idx])]
         n_pave = int(round(f * len(unpaved_idx)))
@@ -280,14 +269,12 @@ def main():
         d_paved = get_distances(g1_ig, city_ig_idx)
         np.save(cache_paved, d_paved)
 
-        for e, w in zip(pave_edges, orig_weights):  # restore graph
+        for e, w in zip(pave_edges, orig_weights):
             g1_ig.es[e]["weight"] = w
 
     unpaved_idx = np.where(unpaved_mask)[0]
     n_pave = int(round(f * len(unpaved_idx)))
 
-    # ── [5] CV_OD matrices ────────────────────────────────────────────────────
-    # CV_OD = t_extreme / t_normal − 1  (same definition as edge-level CV)
     valid_od = np.isfinite(d_normal) & (d_normal > 0)
     cv_extreme = np.full((n_cities, n_cities), np.nan)
     cv_paved = np.full((n_cities, n_cities), np.nan)
@@ -296,13 +283,11 @@ def main():
     cv_extreme = np.clip(cv_extreme, 0, None)
     cv_paved = np.clip(cv_paved, 0, None)
 
-    # Upper-triangle indices only (avoid double-counting symmetric OD pairs)
     i_idx, j_idx = np.triu_indices(n_cities, k=1)
     cv_ex = cv_extreme[i_idx, j_idx]
     cv_pv = cv_paved[i_idx, j_idx]
     valid = np.isfinite(cv_ex)
 
-    # ── [6] Result 1 — isolation quantity ─────────────────────────────────────
     print("\n[7] Computing isolation counts (Result 1) ...")
 
     severe_before = int(np.sum(valid & (cv_ex >= SEVERE_CV)))
@@ -310,14 +295,12 @@ def main():
     extreme_before = int(np.sum(valid & (cv_ex >= EXTREME_CV)))
     extreme_after = int(np.sum(valid & (cv_pv >= EXTREME_CV)))
 
-    # 1-hour reachability per node  (exclude self: k=1 not needed since
-    # d[i,i]=0 < 1h, but we subtract the self count below)
     reach_normal = np.sum((d_normal > 0) & (d_normal < REACH_H), axis=1)
     reach_extreme = np.sum((d_extreme > 0) & (d_extreme < REACH_H), axis=1)
     reach_paved = np.sum((d_paved > 0) & (d_paved < REACH_H), axis=1)
 
-    lost_mask = reach_extreme < reach_normal  # nodes losing ≥1 neighbour
-    recovered_mask = (reach_paved > reach_extreme) & lost_mask  # regain ≥1 after paving
+    lost_mask = reach_extreme < reach_normal
+    recovered_mask = (reach_paved > reach_extreme) & lost_mask
 
     pop_isolated_before = float(pops[lost_mask].sum())
     pop_recovered = float(pops[recovered_mask].sum())
@@ -368,8 +351,6 @@ def main():
             f"   Reduction: {row['reduction']} ({row['reduction_pct']}%)"
         )
 
-    # ── [6b] City node–level CSV (needed by GIS export) ──────────────────────
-    # Save per-node 1-h reachability metrics for the point layer in QGIS
     city_node_records = []
     for k in range(n_cities):
         city_node_records.append(
@@ -393,10 +374,8 @@ def main():
     df_city_nodes = pd.DataFrame(city_node_records)
     df_city_nodes.to_csv(out_dir / "R3_city_nodes.csv", index=False)
 
-    # ── [7] Result 2 — OD spatial data ────────────────────────────────────────
     print("\n[8] Building OD de-isolation spatial data (Result 2) ...")
 
-    # Country assignment via local GADM shapefiles
     gadm_dir = base / "RAW" / "GADM_admin"
     print(f"   Loading GADM boundaries from {gadm_dir} ...")
     world_gdf = load_world_africa(gadm_dir)
@@ -406,7 +385,6 @@ def main():
         print(f"   GADM loaded: {len(world_gdf)} country polygons")
     city_countries = assign_countries(city_lons, city_lats, world_gdf)
 
-    # De-isolated at severe level: was severe before, not severe after
     deiso_severe = valid & (cv_ex >= SEVERE_CV) & (cv_pv < SEVERE_CV)
     deiso_extreme = valid & (cv_ex >= EXTREME_CV) & (cv_pv < EXTREME_CV)
 
@@ -441,7 +419,6 @@ def main():
     print(f"   Extreme→not-extreme de-isolated pairs: {n_deiso_extreme:,}")
     print(f"   Cross-border de-isolated pairs:        {n_cross:,}")
 
-    # ── [8] Country summary ────────────────────────────────────────────────────
     country_rows = []
     for country in sorted(set(city_countries)):
         in_c = np.array([c == country for c in city_countries], dtype=bool)
@@ -493,7 +470,6 @@ def main():
         ].to_string(index=False)
     )
 
-    # ── [9] Region summary ─────────────────────────────────────────────────────
     region_rows = []
     all_region_names = [r[0] for r in REGIONS] + ["Other"]
     for reg in all_region_names:
@@ -541,7 +517,6 @@ def main():
         ].to_string(index=False)
     )
 
-    # ── [10] Spatial map ───────────────────────────────────────────────────────
     print("\n[10] Drawing de-isolation map ...")
     _draw_map(
         city_lons,
@@ -565,9 +540,6 @@ def main():
     print(f"{'='*60}")
 
 
-# =============================================================================
-# MAP
-# =============================================================================
 def _draw_map(
     city_lons,
     city_lats,
@@ -586,22 +558,19 @@ def _draw_map(
 ):
     fig, axes = plt.subplots(1, 2, figsize=(18, 9))
 
-    # ── Left panel: de-isolation arcs ─────────────────────────────────────────
     ax = axes[0]
     ax.set_facecolor("#1a1a2e")
     ax.set_xlim(-20, 55)
     ax.set_ylim(-38, 40)
 
-    # Draw country outlines if available
     if world_gdf is not None:
         try:
             world_gdf.boundary.plot(ax=ax, linewidth=0.4, color="#444466", zorder=1)
         except Exception:
             pass
 
-    # Arc lines for de-isolated pairs (alpha-blended, coloured by severity)
     deiso_idx = np.where(deiso_mask)[0]
-    # Down-sample if too many to render clearly
+
     rng = np.random.default_rng(42)
     if len(deiso_idx) > 20_000:
         deiso_idx = rng.choice(deiso_idx, size=20_000, replace=False)
@@ -614,7 +583,6 @@ def _draw_map(
         color = "#ff4444" if sev >= 1.0 else "#ff9944"
         ax.plot([lo0, lo1], [la0, la1], "-", color=color, alpha=0.04, lw=0.4, zorder=2)
 
-    # Cities coloured by region
     for reg in set(city_regions):
         mask_reg = np.array([r == reg for r in city_regions])
         c = REGION_COLORS.get(reg, "#aaaaaa")
@@ -628,7 +596,6 @@ def _draw_map(
             linewidths=0,
         )
 
-    # Recovered-population bubble overlay
     if recovered_mask.any():
         rec_lons = city_lons[recovered_mask]
         rec_lats = city_lats[recovered_mask]
@@ -645,7 +612,6 @@ def _draw_map(
             label="Pop. regaining 1-h neighbour",
         )
 
-    # Legend for arc colours
     ax.plot(
         [], [], "-", color="#ff4444", lw=1.5, label="Extreme isolated → de-isolated"
     )
@@ -664,7 +630,6 @@ def _draw_map(
     for spine in ax.spines.values():
         spine.set_edgecolor("#444466")
 
-    # ── Right panel: region bar chart ─────────────────────────────────────────
     ax2 = axes[1]
     df_plot = df_region[df_region["n_city_nodes"] > 0].copy()
     regs = df_plot["region"].tolist()
@@ -690,7 +655,6 @@ def _draw_map(
         label="De-isolated by 5% targeted paving",
     )
 
-    # Population recovered as secondary axis
     ax2b = ax2.twinx()
     ax2b.plot(
         x,

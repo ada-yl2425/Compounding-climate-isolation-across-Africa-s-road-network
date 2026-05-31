@@ -19,9 +19,7 @@ import pandas as pd
 
 warnings.filterwarnings("ignore")
 
-# =============================================================================
-# CONFIGURATION
-# =============================================================================
+
 BASE_DIR = Path("path/to/your/base/directory")
 NE_PATH = BASE_DIR / "RAW/ne_10m_populated_places/ne_10m_populated_places.shp"
 OUTPUT_DIR = BASE_DIR / "web/country_layer"

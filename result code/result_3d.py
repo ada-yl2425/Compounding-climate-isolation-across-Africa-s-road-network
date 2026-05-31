@@ -11,16 +11,12 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
-
 ROOT = Path(__file__).resolve().parent
 RESULT_DIR = ROOT / "result 3"
 OUTPUT_STEM = "paving_loss_recovery_triptych"
 
 DATA_CANDIDATES = [
-    Path(
-        "/Users/suhang/Library/Containers/com.tencent.xinWeChat/Data/Documents/"
-        "xwechat_files/Suhang1995522_c823/temp/drag/paving_accessibility_heatmap.gpkg"
-    ),
+    Path("<LOCAL_DATA_ROOT>/" "input_files/paving_accessibility_heatmap.gpkg"),
     ROOT / "paving_accessibility_heatmap.gpkg",
 ]
 
@@ -181,22 +177,22 @@ def fetch_points(data_path: Path, field: str) -> list[tuple[float, float, float]
     conn = sqlite3.connect(f"file:{data_path}?mode=ro", uri=True)
     conn.execute("PRAGMA query_only = ON")
     try:
-        cur = conn.execute(
-            f"""
+        cur = conn.execute(f"""
             SELECT lon, lat, {field}
             FROM accessibility_nodes
             WHERE lon IS NOT NULL
               AND lat IS NOT NULL
               AND {field} IS NOT NULL
             ORDER BY fid
-            """
-        )
+            """)
         return [(float(lon), float(lat), float(value)) for lon, lat, value in cur]
     finally:
         conn.close()
 
 
-def summarize_data(points_by_field: dict[str, list[tuple[float, float, float]]]) -> list[dict[str, object]]:
+def summarize_data(
+    points_by_field: dict[str, list[tuple[float, float, float]]],
+) -> list[dict[str, object]]:
     def quantile(sorted_values: list[float], q: float) -> float | str:
         if not sorted_values:
             return ""
@@ -240,7 +236,9 @@ def summarize_data(points_by_field: dict[str, list[tuple[float, float, float]]])
     return rows
 
 
-def render_points(points: list[tuple[float, float, float]], palette: str) -> Image.Image:
+def render_points(
+    points: list[tuple[float, float, float]], palette: str
+) -> Image.Image:
     overlay = Image.new("RGBA", (MAP_W, MAP_H), (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay, "RGBA")
 
@@ -265,7 +263,9 @@ def render_points(points: list[tuple[float, float, float]], palette: str) -> Ima
         point = point.filter(ImageFilter.GaussianBlur(4.0))
         overlay.alpha_composite(point, (x - halo_r, y - halo_r))
 
-        draw.ellipse((x - core_r, y - core_r, x + core_r, y + core_r), fill=(*color, core_alpha))
+        draw.ellipse(
+            (x - core_r, y - core_r, x + core_r, y + core_r), fill=(*color, core_alpha)
+        )
 
     return overlay
 
@@ -288,15 +288,26 @@ def draw_colorbar(
         t = i / (width - 1)
         color = interpolate_color(t, palette)
         draw.line((x + i, bar_y, x + i, bar_y + height), fill=color, width=1)
-    draw.rounded_rectangle((x, bar_y, x + width, bar_y + height), radius=7, outline="#e2e2dc", width=3)
+    draw.rounded_rectangle(
+        (x, bar_y, x + width, bar_y + height), radius=7, outline="#e2e2dc", width=3
+    )
 
     for tick in LEGEND_TICKS:
         t = value_to_t(float(tick))
         tick_x = x + t * width
-        draw.line((tick_x, bar_y + height, tick_x, bar_y + height + 16), fill="#555555", width=4)
+        draw.line(
+            (tick_x, bar_y + height, tick_x, bar_y + height + 16),
+            fill="#555555",
+            width=4,
+        )
         label = format_tick(float(tick))
         bbox = draw.textbbox((0, 0), label, font=tick_font)
-        draw.text((tick_x - (bbox[2] - bbox[0]) / 2, bar_y + height + 26), label, font=tick_font, fill="#4f4f4f")
+        draw.text(
+            (tick_x - (bbox[2] - bbox[0]) / 2, bar_y + height + 26),
+            label,
+            font=tick_font,
+            fill="#4f4f4f",
+        )
 
 
 def add_legend(canvas: Image.Image) -> None:
@@ -375,10 +386,12 @@ def configure_variant(variant: str) -> Path | None:
     POINT_ALPHA_SCALE = 0.72
     FIGURE_TITLE = "Population-weighted accessibility loss and recovery"
     LOSS_LEGEND_TITLE = "Climate-attributed loss\n(population x percentage points)"
-    RECOVERY_LEGEND_TITLE = "Paving-attributed recovery\n(population x percentage points)"
+    RECOVERY_LEGEND_TITLE = (
+        "Paving-attributed recovery\n(population x percentage points)"
+    )
     LEGEND_NOTE = "Only positive values are colored. Shared asinh stretch expands small and middle weighted values; values >=25M use the darkest color."
     FIELD_NOTE = "Fields: pw_delta_att, pw_rec_att_001, pw_rec_att_020"
-    return Path("/Users/suhang/Desktop/paving_accessibility_heatmap(1).gpkg")
+    return Path("<LOCAL_OUTPUT_ROOT>/paving_accessibility_heatmap(1).gpkg")
 
 
 def main() -> None:
@@ -396,7 +409,9 @@ def main() -> None:
     if background.size != (MAP_W, MAP_H):
         raise ValueError(f"Unexpected basemap size: {background.size}")
 
-    points_by_field = {panel["field"]: fetch_points(data_path, panel["field"]) for panel in PANELS}
+    points_by_field = {
+        panel["field"]: fetch_points(data_path, panel["field"]) for panel in PANELS
+    }
 
     canvas = Image.new("RGBA", (CANVAS_W, CANVAS_H), "white")
     draw = ImageDraw.Draw(canvas)
@@ -410,8 +425,18 @@ def main() -> None:
         panel_x = MARGIN_X + idx * (MAP_W + PANEL_GAP)
         title_y = TOP_MARGIN + MAIN_TITLE_H + 12
         letter = chr(ord("a") + idx)
-        draw.text((panel_x, title_y), f"{letter}  {panel_spec['title']}", font=panel_font, fill=TEXT_DARK)
-        draw.text((panel_x, title_y + 78), panel_spec["subtitle"], font=subtitle_font, fill=TEXT_MID)
+        draw.text(
+            (panel_x, title_y),
+            f"{letter}  {panel_spec['title']}",
+            font=panel_font,
+            fill=TEXT_DARK,
+        )
+        draw.text(
+            (panel_x, title_y + 78),
+            panel_spec["subtitle"],
+            font=subtitle_font,
+            fill=TEXT_MID,
+        )
 
         panel = background.copy()
         points = points_by_field[panel_spec["field"]]
@@ -433,7 +458,9 @@ def main() -> None:
 
     print(f"using data: {data_path}")
     print(f"variant: {args.variant}")
-    print(f"stretch: transform={VALUE_TRANSFORM}, cap={VALUE_CAP:g}, gamma={GAMMA:g}, asinh_scale={ASINH_SCALE:g}; zero values are transparent")
+    print(
+        f"stretch: transform={VALUE_TRANSFORM}, cap={VALUE_CAP:g}, gamma={GAMMA:g}, asinh_scale={ASINH_SCALE:g}; zero values are transparent"
+    )
     print(f"saved: {output_png}")
     print(f"saved: {output_pdf}")
     print(f"saved: {output_csv}")

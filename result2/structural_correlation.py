@@ -50,7 +50,7 @@ warnings.filterwarnings("ignore")
 
 _DEFAULT_BASE = Path("path/to/base")
 
-# World Bank indicators to test (column name → display label)
+
 WB_INDICATORS = {
     "gdp_per_capita": "GDP per capita (USD)",
     "hospital_beds_per_1000": "Hospital beds per 1,000 people",
@@ -58,13 +58,13 @@ WB_INDICATORS = {
     "health_exp_per_capita": "Health expenditure per capita (USD)",
 }
 
-# Accessibility metrics (column name → display label)
+
 ACCESS_METRICS = {
     "pwmtt_normal": "Baseline PWMTT (hours)\n[normal weather]",
     "pwmtt_delta": "Climate-induced PWMTT increase (hours)\n[extreme − normal]",
 }
 
-# Countries to label on scatter plots (outliers / notable cases)
+
 LABEL_COUNTRIES = {
     "Somalia",
     "Mauritania",
@@ -79,9 +79,6 @@ LABEL_COUNTRIES = {
 }
 
 
-# =============================================================================
-# LOAD & MERGE
-# =============================================================================
 def load_data(base: Path) -> pd.DataFrame:
     wb_path = base / "RAW" / "worldbank_indicators.csv"
     acc_path = (
@@ -100,15 +97,11 @@ def load_data(base: Path) -> pd.DataFrame:
     df = acc.merge(wb, on="country", how="inner")
     print(f"  Merged rows: {len(df)}  (acc={len(acc)}, wb={len(wb)})")
 
-    # Drop rows where both key metrics are null
     df = df.dropna(subset=["pwmtt_normal", "pwmtt_delta"])
     print(f"  After dropping null accessibility: {len(df)}")
     return df
 
 
-# =============================================================================
-# STEP 1 — SPEARMAN CORRELATION MATRIX
-# =============================================================================
 def compute_correlations(df: pd.DataFrame, out_dir: Path) -> pd.DataFrame:
     print("\n  Spearman correlations:")
     records = []
@@ -156,9 +149,6 @@ def compute_correlations(df: pd.DataFrame, out_dir: Path) -> pd.DataFrame:
     return df_corr
 
 
-# =============================================================================
-# STEP 2 — SCATTER PANEL (4 WB indicators × 2 accessibility metrics)
-# =============================================================================
 def plot_scatter_panel(df: pd.DataFrame, df_corr: pd.DataFrame, out_dir: Path):
     n_wb = len(WB_INDICATORS)
     n_acc = len(ACCESS_METRICS)
@@ -190,7 +180,6 @@ def plot_scatter_panel(df: pd.DataFrame, df_corr: pd.DataFrame, out_dir: Path):
                 lw=0.5,
             )
 
-            # Label outliers
             for _, row in sub.iterrows():
                 if row["country"] in LABEL_COUNTRIES:
                     ax.annotate(
@@ -204,7 +193,6 @@ def plot_scatter_panel(df: pd.DataFrame, df_corr: pd.DataFrame, out_dir: Path):
                         color="#555555",
                     )
 
-            # Trend line
             valid = sub[[wb_col, acc_col]].dropna()
             if len(valid) >= 3:
                 z = np.polyfit(valid[wb_col], valid[acc_col], 1)
@@ -212,7 +200,6 @@ def plot_scatter_panel(df: pd.DataFrame, df_corr: pd.DataFrame, out_dir: Path):
                 x_line = np.linspace(valid[wb_col].min(), valid[wb_col].max(), 100)
                 ax.plot(x_line, p(x_line), "r--", lw=1.2, alpha=0.7)
 
-            # Correlation annotation
             corr_row = df_corr[
                 (df_corr["wb_indicator"] == wb_col)
                 & (df_corr["access_metric"] == acc_col)
@@ -252,9 +239,6 @@ def plot_scatter_panel(df: pd.DataFrame, df_corr: pd.DataFrame, out_dir: Path):
     print(f"  Saved → structural_scatter_panel.png")
 
 
-# =============================================================================
-# STEP 3 — BUBBLE CHART: GDP × PWMTT × DELTA
-# =============================================================================
 def plot_bubble_chart(df: pd.DataFrame, out_dir: Path):
     """
     x-axis : GDP per capita (log scale)
@@ -271,12 +255,10 @@ def plot_bubble_chart(df: pd.DataFrame, out_dir: Path):
 
     fig, ax = plt.subplots(figsize=(11, 7))
 
-    # Normalise bubble size: sqrt(pop) scaled to [30, 800]
     pop = sub["population"].values
     pop_norm = np.sqrt(pop / pop.max())
     sizes = 30 + pop_norm * 770
 
-    # Colour by pwmtt_delta
     delta = sub["pwmtt_delta"].values
     norm = mcolors.Normalize(vmin=0, vmax=np.percentile(delta, 95))
     cmap = cm.get_cmap("YlOrRd")
@@ -292,7 +274,6 @@ def plot_bubble_chart(df: pd.DataFrame, out_dir: Path):
         lw=0.6,
     )
 
-    # Country labels
     for _, row in sub.iterrows():
         if row["country"] in LABEL_COUNTRIES:
             ax.annotate(
@@ -315,13 +296,11 @@ def plot_bubble_chart(df: pd.DataFrame, out_dir: Path):
     )
     ax.grid(alpha=0.25)
 
-    # Colourbar
     sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
     sm.set_array([])
     cbar = fig.colorbar(sm, ax=ax, pad=0.02)
     cbar.set_label("Climate-induced PWMTT increase (hours)", fontsize=10)
 
-    # Spearman annotation
     rho, pval = spearmanr(np.log(sub["gdp_per_capita"]), sub["pwmtt_normal"])
     ax.text(
         0.03,
@@ -339,9 +318,6 @@ def plot_bubble_chart(df: pd.DataFrame, out_dir: Path):
     print(f"  Saved → bubble_gdp_pwmtt.png")
 
 
-# =============================================================================
-# MAIN
-# =============================================================================
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--base", default=str(_DEFAULT_BASE))

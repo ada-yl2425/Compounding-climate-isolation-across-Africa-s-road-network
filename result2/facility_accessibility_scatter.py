@@ -80,9 +80,6 @@ LABEL_COUNTRIES = {
 }
 
 
-# =============================================================================
-# LOAD & PREPARE
-# =============================================================================
 def load_data(base: Path) -> pd.DataFrame:
     acc_path = (
         base / "web" / "health_accessibility" / "country_accessibility_summary.csv"
@@ -91,7 +88,6 @@ def load_data(base: Path) -> pd.DataFrame:
 
     acc = pd.read_csv(acc_path)
 
-    # Merge WB population for a more accurate denominator
     if wb_path.exists():
         wb = pd.read_csv(wb_path)[["country", "population"]].rename(
             columns={"population": "wb_population"}
@@ -105,11 +101,9 @@ def load_data(base: Path) -> pd.DataFrame:
         df = acc.copy()
         df["wb_population"] = df["total_population"]
 
-    # Use WB population where available, fall back to network population
     df["pop_denom"] = df["wb_population"].combine_first(df["total_population"])
     df["pop_denom"] = df["pop_denom"].replace(0, np.nan)
 
-    # Facility density: facilities per million people
     df["facility_per_million"] = df["n_health_facilities"] / df["pop_denom"] * 1e6
 
     df = df.dropna(subset=["facility_per_million", "pwmtt_normal", "pwmtt_delta"])
@@ -117,13 +111,9 @@ def load_data(base: Path) -> pd.DataFrame:
     return df
 
 
-# =============================================================================
-# STEP 1 — MAIN SCATTER: DENSITY vs PWMTT (colour = delta)
-# =============================================================================
 def plot_main_scatter(df: pd.DataFrame, out_dir: Path):
     fig, axes = plt.subplots(1, 2, figsize=(14, 6))
 
-    # --- Left panel: facility density vs pwmtt_normal, colour = delta ---
     ax = axes[0]
     delta = df["pwmtt_delta"].values
     norm = mcolors.Normalize(vmin=0, vmax=np.percentile(delta[np.isfinite(delta)], 95))
@@ -156,7 +146,6 @@ def plot_main_scatter(df: pd.DataFrame, out_dir: Path):
                 color="#333333",
             )
 
-    # Median lines (quadrant dividers)
     med_dens = df["facility_per_million"].median()
     med_pwmtt = df["pwmtt_normal"].median()
     ax.axvline(med_dens, color="gray", lw=0.8, ls="--", alpha=0.6)
@@ -170,13 +159,11 @@ def plot_main_scatter(df: pd.DataFrame, out_dir: Path):
         fontsize=11,
     )
 
-    # Colourbar
     sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
     sm.set_array([])
     cbar = fig.colorbar(sm, ax=ax, pad=0.02, fraction=0.046)
     cbar.set_label("Climate-induced PWMTT Δ (hours)", fontsize=9)
 
-    # Spearman
     rho, pval = spearmanr(df["facility_per_million"], df["pwmtt_normal"])
     sig = (
         "***"
@@ -195,7 +182,6 @@ def plot_main_scatter(df: pd.DataFrame, out_dir: Path):
     )
     ax.grid(alpha=0.25)
 
-    # --- Right panel: facility density vs pwmtt_delta (direct test) ---
     ax2 = axes[1]
     rho2, pval2 = spearmanr(df["facility_per_million"], df["pwmtt_delta"])
     sig2 = (
@@ -226,7 +212,6 @@ def plot_main_scatter(df: pd.DataFrame, out_dir: Path):
                 color="#333333",
             )
 
-    # Trend line
     valid = df[["facility_per_million", "pwmtt_delta"]].dropna()
     if len(valid) >= 5:
         z = np.polyfit(valid["facility_per_million"], valid["pwmtt_delta"], 1)
@@ -261,9 +246,6 @@ def plot_main_scatter(df: pd.DataFrame, out_dir: Path):
     print(f"  Saved → facility_density_scatter.png")
 
 
-# =============================================================================
-# STEP 2 — QUADRANT SUMMARY TABLE
-# =============================================================================
 def compute_quadrant_summary(df: pd.DataFrame, out_dir: Path):
     """
     Four quadrants split by median facility density and median PWMTT.
@@ -319,9 +301,6 @@ def compute_quadrant_summary(df: pd.DataFrame, out_dir: Path):
     return df_q
 
 
-# =============================================================================
-# MAIN
-# =============================================================================
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--base", default=str(_DEFAULT_BASE))

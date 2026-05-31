@@ -26,9 +26,7 @@ from scipy.spatial import cKDTree
 
 warnings.filterwarnings("ignore")
 
-# =============================================================================
-# CONFIGURATION
-# =============================================================================
+
 BASE_DIR = Path("path/to/your/base/directory")
 ROADS_DIR = BASE_DIR / "RAW/Road_data"
 SPEED_DIR = BASE_DIR / "road_speed_cordex"
@@ -48,9 +46,6 @@ SEVERE_INCREASE_THRESH = 0.5
 UNREACHABLE_THRESH = 1e8
 
 
-# =============================================================================
-# UTILITIES
-# =============================================================================
 class _Timer:
     def __init__(self, label):
         self.label = label
@@ -71,9 +66,6 @@ def fmt(x):
     return f"{x:.4f}" if x is not None and not np.isnan(x) else "N/A"
 
 
-# =============================================================================
-# UNION-FIND FOR ENDPOINT MERGING
-# =============================================================================
 def _merge_endpoints(pts_arr, same_pairs, threshold):
     N = len(pts_arr)
     parent = list(range(N))
@@ -109,9 +101,6 @@ def _merge_endpoints(pts_arr, same_pairs, threshold):
     return node_id_of, node_coords
 
 
-# =============================================================================
-# STEP 0: GRAPH BUILDING (Shared across city/country/africa layers)
-# =============================================================================
 def build_graphs_from_shp(shp_path, iri_path, surface_filter="unpaved"):
     print(f"\n{'=' * 60}\n  STEP 0 - Graph Building\n{'=' * 60}")
     import geopandas as gpd
@@ -161,7 +150,7 @@ def build_graphs_from_shp(shp_path, iri_path, surface_filter="unpaved"):
     iri_lu = df_iri[needed].set_index("road_id").to_dict("index")
 
     v_n_med = df_iri["V_normal"].median()
-    v_e_med = v_n_med  # paved roads (not in speed CSV): no climate impact
+    v_e_med = v_n_med
     print(
         f"  Speed CSV: {len(df_iri):,} rows | Fill: V_n={v_n_med:.1f} V_e={v_e_med:.1f} (paved, climate-neutral)"
     )
@@ -323,9 +312,6 @@ def _scipy_sampled_efficiency(G, n_sample, weighted=True):
     return float(np.sum(1.0 / D[mask]) / (n_sample * (n - 1)))
 
 
-# =============================================================================
-# CITY LAYER FUNCTIONS
-# =============================================================================
 def compute_network_metrics(G0, G1, G_conn):
     print(f"\n{'=' * 60}\n  STEP 2 - Global Network Metrics\n{'=' * 60}")
     results = {}
@@ -761,9 +747,6 @@ def _build_summary_row(
     }
 
 
-# =============================================================================
-# COUNTRY / AFRICA LAYER FUNCTIONS
-# =============================================================================
 def snap_cities_to_network(city_nodes_df, G0, node_coords, country_filter=None):
     df = city_nodes_df.copy()
     if country_filter:
@@ -1021,9 +1004,6 @@ def run_od_layer(
     return summary
 
 
-# =============================================================================
-# CITY LAYER RUNNERS
-# =============================================================================
 def run_single_city(
     shp_path,
     iri_path,
@@ -1134,9 +1114,6 @@ def run_batch_city(batch_dir, country, surface="unpaved", out_dir=None):
     return rows
 
 
-# =============================================================================
-# MAIN EXECUTABLE
-# =============================================================================
 def main():
     parser = argparse.ArgumentParser(
         description="Africa Road Network Climate Impact Pipeline v7"
@@ -1154,7 +1131,6 @@ def main():
     parser.add_argument("--out_dir", type=str)
     args = parser.parse_args()
 
-    # City Layer Execution
     if args.layer == "city":
         if args.batch_dir:
             run_batch_city(args.batch_dir, args.country, args.surface, args.out_dir)
@@ -1181,7 +1157,6 @@ def main():
             print("City layer requires --batch_dir OR --shp + --iri")
         return
 
-    # Country / Africa Layer Execution
     if args.layer in ("country", "africa"):
         if not (args.shp and args.iri and args.nodes):
             print(f"{args.layer} layer requires --shp, --iri, and --nodes")

@@ -7,9 +7,7 @@ import os
 import re
 from pathlib import Path
 
-OUTPUT_DIR = Path(
-    "/Users/suhang/Downloads/同步空间/工作文件/0-1博后论文/4.非洲路网可达性/插图绘制/result 2.1"
-)
+OUTPUT_DIR = Path("<FIGURE_OUTPUT_ROOT>/result 2.1")
 MPLCONFIG_DIR = OUTPUT_DIR / ".mplconfig"
 MPLCONFIG_DIR.mkdir(parents=True, exist_ok=True)
 os.environ.setdefault("MPLCONFIGDIR", str(MPLCONFIG_DIR))
@@ -23,18 +21,17 @@ import numpy as np
 import pandas as pd
 from matplotlib.lines import Line2D
 
-
 TAIL_GAP_CSV = Path(
-    "/Users/suhang/Downloads/同步空间/工作文件/0-1博后论文/4.非洲路网可达性/过程文件/result/result2/finding1_2_country_tail_gap_p50_p90_ranking/country_p50_p90_delta_travel_time_and_tail_gap.csv"
+    "<PROJECT_WORK_ROOT>/result/result2/finding1_2_country_tail_gap_p50_p90_ranking/country_p50_p90_delta_travel_time_and_tail_gap.csv"
 )
-BUFFERING_CSV = Path(
-    "/Users/suhang/Library/Containers/com.tencent.xinWeChat/Data/Documents/xwechat_files/Suhang1995522_c823/temp/drag/country_buffering_stats.csv"
-)
+BUFFERING_CSV = Path("<LOCAL_INPUT_ROOT>/input_files/country_buffering_stats.csv")
 
 OUTPUT_PNG = OUTPUT_DIR / "result2_1_tailgap_buffering_mirror_dumbbell.png"
 OUTPUT_PDF = OUTPUT_DIR / "result2_1_tailgap_buffering_mirror_dumbbell.pdf"
 OUTPUT_LOG = OUTPUT_DIR / "result2_1_tailgap_buffering_mirror_dumbbell_checks.txt"
-OUTPUT_SORTED_CSV = OUTPUT_DIR / "result2_1_tailgap_buffering_mirror_dumbbell_plot_data.csv"
+OUTPUT_SORTED_CSV = (
+    OUTPUT_DIR / "result2_1_tailgap_buffering_mirror_dumbbell_plot_data.csv"
+)
 
 FIG_WIDTH_CM = 12.5
 FIG_HEIGHT_CM = 20.0
@@ -164,34 +161,46 @@ def load_data(logger: Logger) -> tuple[pd.DataFrame, dict[str, object]]:
         buffering_df[col] = pd.to_numeric(buffering_df[col], errors="coerce")
 
     tail_df = tail_df.loc[~tail_df["country"].isin(EXCLUDED_COUNTRIES)].copy()
-    buffering_df = buffering_df.loc[~buffering_df["country"].isin(EXCLUDED_COUNTRIES)].copy()
+    buffering_df = buffering_df.loc[
+        ~buffering_df["country"].isin(EXCLUDED_COUNTRIES)
+    ].copy()
 
-    merged = tail_df.merge(buffering_df, on="country", how="inner", validate="one_to_one")
+    merged = tail_df.merge(
+        buffering_df, on="country", how="inner", validate="one_to_one"
+    )
     merged["plot_country"] = merged["country"].map(format_country_label)
     merged["p50_delta_min"] = merged["p50_delta_h"] * 60.0
     merged["p90_delta_min"] = merged["p90_delta_h"] * 60.0
     merged["buffering_p50_pct"] = merged["pwmean_buffering_p50"] * 100.0
     merged["buffering_p90_pct"] = merged["pwmean_buffering_p90"] * 100.0
-    merged["buffering_p50_clipped"] = merged["buffering_p50_pct"] > LEFT_PANEL_DISPLAY_MAX_PCT
-    merged["buffering_p90_clipped"] = merged["buffering_p90_pct"] > LEFT_PANEL_DISPLAY_MAX_PCT
+    merged["buffering_p50_clipped"] = (
+        merged["buffering_p50_pct"] > LEFT_PANEL_DISPLAY_MAX_PCT
+    )
+    merged["buffering_p90_clipped"] = (
+        merged["buffering_p90_pct"] > LEFT_PANEL_DISPLAY_MAX_PCT
+    )
     merged["buffering_p50_pct_plot"] = merged["buffering_p50_pct"].clip(
         upper=LEFT_PANEL_DISPLAY_MAX_PCT
     )
     merged["buffering_p90_pct_plot"] = merged["buffering_p90_pct"].clip(
         upper=LEFT_PANEL_DISPLAY_MAX_PCT
     )
-    merged["buffering_gap_pct"] = merged["buffering_p50_pct"] - merged["buffering_p90_pct"]
+    merged["buffering_gap_pct"] = (
+        merged["buffering_p50_pct"] - merged["buffering_p90_pct"]
+    )
     merged["degree_gap"] = merged["mean_degree_p50"] - merged["mean_degree_p90"]
     merged["tail_gap_abs_h"] = merged["p90_delta_h"] - merged["p50_delta_h"]
 
     sort_cols = [SORT_PRIMARY, "tail_gap_abs_h", "p90_delta_h"]
-    merged = merged.sort_values(sort_cols, ascending=[False, False, False], kind="mergesort")
+    merged = merged.sort_values(
+        sort_cols, ascending=[False, False, False], kind="mergesort"
+    )
     merged = merged.reset_index(drop=True)
 
     n_countries = len(merged)
-    degenerate_buffer_mask = (
-        merged["mean_direct_degradation_h_p50"].eq(0) | merged["mean_direct_degradation_h_p90"].eq(0)
-    )
+    degenerate_buffer_mask = merged["mean_direct_degradation_h_p50"].eq(0) | merged[
+        "mean_direct_degradation_h_p90"
+    ].eq(0)
     p50_buffer_gt_mask = merged["pwmean_buffering_p50"] > merged["pwmean_buffering_p90"]
     degree_gt_mask = merged["mean_degree_p50"] > merged["mean_degree_p90"]
     tail_gt_mask = merged["p90_delta_h"] > merged["p50_delta_h"]
@@ -210,14 +219,10 @@ def load_data(logger: Logger) -> tuple[pd.DataFrame, dict[str, object]]:
         "7) Mean degree at P50 > mean degree at P90: "
         f"{int(degree_gt_mask.sum())} / {n_countries}"
     )
-    logger.log(
-        "8) Median buffering ratio (country-level, population-weighted)"
-    )
+    logger.log("8) Median buffering ratio (country-level, population-weighted)")
     logger.log(f"   - P50: {merged['buffering_p50_pct'].median():.2f}%")
     logger.log(f"   - P90: {merged['buffering_p90_pct'].median():.2f}%")
-    logger.log(
-        "9) Mean buffering ratio (country-level, population-weighted)"
-    )
+    logger.log("9) Mean buffering ratio (country-level, population-weighted)")
     logger.log(f"   - P50: {merged['buffering_p50_pct'].mean():.2f}%")
     logger.log(f"   - P90: {merged['buffering_p90_pct'].mean():.2f}%")
     logger.log(
@@ -287,7 +292,9 @@ def load_data(logger: Logger) -> tuple[pd.DataFrame, dict[str, object]]:
                 "p50_delta_min",
                 "p90_delta_min",
             ]
-        ].head(10).to_string(index=False)
+        ]
+        .head(10)
+        .to_string(index=False)
     )
 
     stats = {
@@ -354,7 +361,9 @@ def make_plot(df: pd.DataFrame, stats: dict[str, object]) -> None:
         }
     )
 
-    fig = plt.figure(figsize=(FIG_WIDTH_CM / 2.54, FIG_HEIGHT_CM / 2.54), facecolor="white")
+    fig = plt.figure(
+        figsize=(FIG_WIDTH_CM / 2.54, FIG_HEIGHT_CM / 2.54), facecolor="white"
+    )
     gs = fig.add_gridspec(1, 3, width_ratios=GRID_WIDTH_RATIOS, wspace=0.02)
 
     ax_left = fig.add_subplot(gs[0, 0])
@@ -449,7 +458,9 @@ def make_plot(df: pd.DataFrame, stats: dict[str, object]) -> None:
     ax_left.set_ylim(-0.5, len(df) - 0.5)
     ax_left.invert_yaxis()
     ax_left.set_xlim(LEFT_PANEL_DISPLAY_MAX_PCT, -LEFT_ZERO_PAD_PCT)
-    ax_right.set_xlim(-RIGHT_ZERO_PAD_MIN, max(150, float(df["p90_delta_min"].max()) + 5))
+    ax_right.set_xlim(
+        -RIGHT_ZERO_PAD_MIN, max(150, float(df["p90_delta_min"].max()) + 5)
+    )
 
     ax_left.set_xticks([60, 40, 20, 0])
     ax_right.set_xticks([0, 50, 100, 150])

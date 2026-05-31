@@ -9,11 +9,9 @@ import sys
 from pathlib import Path
 from typing import Dict, Iterable, List, Tuple
 
-OUTPUT_DIR = Path(
-    "/Users/suhang/Downloads/同步空间/工作文件/0-1博后论文/4.非洲路网可达性/插图绘制/result 2.2"
-)
+OUTPUT_DIR = Path("<FIGURE_OUTPUT_ROOT>/result 2.2")
 INPUT_CSV = Path(
-    "/Users/suhang/Downloads/同步空间/工作文件/0-1博后论文/4.非洲路网可达性/过程文件/result/result2/"
+    "<PROJECT_WORK_ROOT>/result/result2/"
     "finding3_isochrone_coverage_drop_by_threshold/"
     "country_isochrone_coverage_normal_vs_extreme_all_thresholds.csv"
 )
@@ -69,6 +67,7 @@ os.environ.setdefault("MPLCONFIGDIR", str(OUTPUT_DIR / ".mplconfig"))
 Path(os.environ["MPLCONFIGDIR"]).mkdir(parents=True, exist_ok=True)
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
@@ -77,7 +76,7 @@ from matplotlib.ticker import MultipleLocator
 
 try:
     from scipy.interpolate import PchipInterpolator
-except Exception:  # pragma: no cover - fallback only if scipy is unavailable
+except Exception:
     PchipInterpolator = None
 
 LOG_LINES: List[str] = []
@@ -177,14 +176,22 @@ def detect_threshold_columns(
     else:
         unit_summary = "mixed units encoded in column names; converted to minutes"
 
-    return dict(sorted(normal_cols.items())), dict(sorted(extreme_cols.items())), unit_summary
+    return (
+        dict(sorted(normal_cols.items())),
+        dict(sorted(extreme_cols.items())),
+        unit_summary,
+    )
 
 
-def candidate_long_format_fields(df: pd.DataFrame) -> Tuple[List[str], List[str], List[str]]:
+def candidate_long_format_fields(
+    df: pd.DataFrame,
+) -> Tuple[List[str], List[str], List[str]]:
     threshold_fields = [
         column
         for column in df.columns
-        if re.search(r"(threshold|travel.*time|time.*threshold)", column, flags=re.IGNORECASE)
+        if re.search(
+            r"(threshold|travel.*time|time.*threshold)", column, flags=re.IGNORECASE
+        )
     ]
     normal_fields = [
         column
@@ -224,7 +231,9 @@ def aggregate_series(
         if (weights <= 0).any():
             raise ValueError("Population weights contain non-positive values.")
         for threshold_min, column in columns.items():
-            values[threshold_min] = float(np.average(df[column].astype(float), weights=weights) * scale_factor)
+            values[threshold_min] = float(
+                np.average(df[column].astype(float), weights=weights) * scale_factor
+            )
         return pd.Series(values)
 
     raise ValueError(f"Unsupported aggregation mode: {mode}")
@@ -269,7 +278,9 @@ def build_point_cloud_table(
         country: float(offset)
         for country, offset in zip(
             sorted(df["country"].tolist()),
-            rng.uniform(-POINT_JITTER_HALF_WIDTH, POINT_JITTER_HALF_WIDTH, size=len(df)),
+            rng.uniform(
+                -POINT_JITTER_HALF_WIDTH, POINT_JITTER_HALF_WIDTH, size=len(df)
+            ),
         )
     }
     rows = []
@@ -286,7 +297,9 @@ def build_point_cloud_table(
                         "threshold_min": threshold_min,
                         "scenario": scenario,
                         "coverage_pct": float(coverage_pct),
-                        "x_plot": float(threshold_min + offset + country_offsets[country]),
+                        "x_plot": float(
+                            threshold_min + offset + country_offsets[country]
+                        ),
                     }
                 )
     return pd.DataFrame(rows)
@@ -310,7 +323,9 @@ def format_axis_tick_label(minutes: float) -> str:
     return f"{int(minutes)}m"
 
 
-def match_threshold(available_minutes: Iterable[float], requested_min: float) -> float | None:
+def match_threshold(
+    available_minutes: Iterable[float], requested_min: float
+) -> float | None:
     available = np.asarray(list(available_minutes), dtype=float)
     if available.size == 0:
         return None
@@ -441,7 +456,12 @@ def plot_figure(
             ha="center",
             va="center",
             fontsize=FONT_SIZE,
-            bbox={"boxstyle": "round,pad=0.18", "fc": "white", "ec": "none", "alpha": 0.93},
+            bbox={
+                "boxstyle": "round,pad=0.18",
+                "fc": "white",
+                "ec": "none",
+                "alpha": 0.93,
+            },
             color=TEXT_COLOR,
             zorder=7,
         )
@@ -511,17 +531,23 @@ def main() -> None:
     raw_max = float(np.nanmax(df[relevant_columns].to_numpy()))
     scaled_min = raw_min * scale_factor
     scaled_max = raw_max * scale_factor
-    abnormal_mask = (df[relevant_columns] < 0) | (df[relevant_columns] > (1.0 if scale_factor == 100.0 else 100.0))
+    abnormal_mask = (df[relevant_columns] < 0) | (
+        df[relevant_columns] > (1.0 if scale_factor == 100.0 else 100.0)
+    )
     abnormal_count = int(abnormal_mask.sum().sum())
 
     summary_df = build_summary_table(
         df, normal_cols, extreme_cols, scale_factor, mode=AGGREGATION_MODE
     )
-    point_cloud_df = build_point_cloud_table(df, normal_cols, extreme_cols, scale_factor)
+    point_cloud_df = build_point_cloud_table(
+        df, normal_cols, extreme_cols, scale_factor
+    )
     if summary_df.empty:
         raise ValueError("Summary table is empty after aggregation.")
 
-    alt_mode = "population_weighted" if AGGREGATION_MODE == "country_mean" else "country_mean"
+    alt_mode = (
+        "population_weighted" if AGGREGATION_MODE == "country_mean" else "country_mean"
+    )
     alt_summary_df = build_summary_table(
         df, normal_cols, extreme_cols, scale_factor, mode=alt_mode
     )
@@ -546,10 +572,16 @@ def main() -> None:
         log(f"   - {column}")
     log("")
     log("2) Structure and field detection")
-    log(f"   - Detected table layout: wide format (thresholds encoded in coverage column names)")
+    log(
+        f"   - Detected table layout: wide format (thresholds encoded in coverage column names)"
+    )
     log(
         "   - Candidate long-format threshold fields: "
-        + (", ".join(threshold_field_candidates) if threshold_field_candidates else "none")
+        + (
+            ", ".join(threshold_field_candidates)
+            if threshold_field_candidates
+            else "none"
+        )
     )
     log(
         "   - Candidate long-format normal coverage fields: "
@@ -562,7 +594,9 @@ def main() -> None:
     log(f"   - Threshold interpretation: {threshold_unit_summary}")
     log(f"   - Detected normal coverage columns: {list(normal_cols.values())}")
     log(f"   - Detected extreme coverage columns: {list(extreme_cols.values())}")
-    log(f"   - Coverage scale interpretation: {coverage_scale_name} -> plotted as percentages")
+    log(
+        f"   - Coverage scale interpretation: {coverage_scale_name} -> plotted as percentages"
+    )
     log(f"   - Aggregation mode used for the figure: {AGGREGATION_MODE}")
     if POPULATION_WEIGHT_COL in df.columns:
         log(f"   - Population weight field available: {POPULATION_WEIGHT_COL}")

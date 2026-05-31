@@ -15,12 +15,12 @@ Usage:
     python result3/run_bottleneck_stability.py \\
         --base-dir <BASE_DIR> \\
         --gcm MPI-M-MPI-ESM-LR \\
-        [--climate-dir <CLIMATE_DIR>]  # override NC file location
-        [--skip-speed-gen]         # skip Step 1 if CSVs already exist
+        [--climate-dir <CLIMATE_DIR>]  (override NC file location)
+        [--skip-speed-gen]  (skip Step 1 if CSVs already exist)
         [--top-k 500]
 
 Pre-requisite: NC climate files accessible in --climate-dir
-    (default: {base}/RAW/Climate_data/气象数据raw/)
+    (default: {base}/RAW/Climate_data/weather_data_raw/)
     for the chosen GCM and all three RCPs.
 """
 
@@ -94,7 +94,6 @@ def main():
     print(f"  Climate dir: {args.climate_dir or '(default)'}")
     print(f"{'='*60}\n")
 
-    # ── Pre-flight ────────────────────────────────────────────────────────────
     print("[Pre-flight] Existing future road speed CSVs:")
     available = preflight_check(base, args.gcm)
 
@@ -109,7 +108,6 @@ def main():
         )
         sys.exit(1)
 
-    # ── Step 1: Generate future road speeds ───────────────────────────────────
     if not args.skip_speed_gen:
         print(f"\n[Step 1] Generating future road speed CSVs...")
         for rcp in SCENARIOS:
@@ -142,7 +140,6 @@ def main():
     else:
         print("\n[Step 1] Skipped (--skip-speed-gen set)")
 
-    # ── Step 2: Stability analysis ────────────────────────────────────────────
     print(f"\n[Step 2] Running bottleneck stability analysis...")
     rc = run(
         [

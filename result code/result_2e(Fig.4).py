@@ -19,12 +19,8 @@ from matplotlib.collections import LineCollection, PatchCollection
 from matplotlib.colors import LinearSegmentedColormap, PowerNorm
 from matplotlib.patches import Polygon
 
-
 WORKDIR = Path(__file__).resolve().parent
-GPKG = Path(
-    "/Users/suhang/Library/Containers/com.tencent.xinWeChat/Data/Documents/"
-    "xwechat_files/Suhang1995522_c823/temp/drag/health_facility_pw_delta_t.gpkg"
-)
+GPKG = Path("<LOCAL_DATA_ROOT>/" "input_files/health_facility_pw_delta_t.gpkg")
 TABLE = "health_facility_pw_delta_t"
 VALUE_FIELD = "pw_delta_t"
 COUNTRIES_SHP = WORKDIR / "ne_50m_admin_0_countries" / "ne_50m_admin_0_countries.shp"
@@ -101,7 +97,9 @@ def read_shp_polygon_parts(shp_path, xlim, ylim, continent="Africa"):
                 continue
 
             n_parts, n_points = struct.unpack("<2i", content[36:44])
-            part_starts = list(struct.unpack(f"<{n_parts}i", content[44 : 44 + 4 * n_parts]))
+            part_starts = list(
+                struct.unpack(f"<{n_parts}i", content[44 : 44 + 4 * n_parts])
+            )
             point_offset = 44 + 4 * n_parts
             points = np.frombuffer(
                 content, dtype="<f8", count=n_points * 2, offset=point_offset
@@ -125,7 +123,9 @@ def read_points():
     """
     with sqlite3.connect(GPKG) as con:
         df = pd.read_sql_query(query, con)
-    df = df[np.isfinite(df["lon"]) & np.isfinite(df["lat"]) & np.isfinite(df[VALUE_FIELD])].copy()
+    df = df[
+        np.isfinite(df["lon"]) & np.isfinite(df["lat"]) & np.isfinite(df[VALUE_FIELD])
+    ].copy()
     return df
 
 

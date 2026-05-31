@@ -51,7 +51,7 @@ import pandas as pd
 
 OUT_DIR = Path(__file__).parent
 
-# ── Try to import SALib ───────────────────────────────────────────────────────
+
 try:
     from SALib.sample.morris import sample as morris_sample
     from SALib.analyze.morris import analyze as morris_analyze
@@ -62,7 +62,7 @@ except ImportError:
     print("[WARN] SALib not found — Morris analysis skipped.")
     print("       Install with:  pip install SALib\n")
 
-# ── Speed lookup (IRI → speed, same table as production code) ────────────────
+
 _R = np.array([6, 8, 10, 12, 14, 16, 18, 20], dtype=float)
 _V = np.array([106, 80, 64, 53, 46, 40, 35, 32], dtype=float)
 
@@ -71,7 +71,6 @@ def iri_to_speed(iri: np.ndarray) -> np.ndarray:
     return np.interp(np.clip(iri, _R[0], _R[-1]), _R, _V)
 
 
-# ── Vectorised HDM-4 IRI (all presets as explicit arguments) ─────────────────
 def hdm4_iri_vec(
     mmp_m: np.ndarray,
     kcv: np.ndarray,
@@ -98,28 +97,23 @@ def hdm4_iri_vec(
     return rg
 
 
-# ── Synthetic road-segment dataset ───────────────────────────────────────────
-# Distributions calibrated to sub-Saharan Africa context.
-# Fixed seed for reproducibility.
 RNG = np.random.default_rng(42)
 N_SEGS = 3_000
-N_MONTHS = 120  # 10-year baseline (2011-2020)
+N_MONTHS = 120
 
 
 def _make_synthetic_data() -> dict:
     """Generate fixed synthetic segments used throughout the analysis."""
-    kcv = RNG.uniform(0, 80, N_SEGS)  # curvature deg/km
+    kcv = RNG.uniform(0, 80, N_SEGS)
     slope_deg = RNG.exponential(scale=3.0, size=N_SEGS).clip(0.1, 15)
     slope_pct = np.tan(np.radians(slope_deg)) * 100
 
-    # Monthly precipitation (m/month): lognormal, Africa unpaved catchment
     pr = RNG.lognormal(mean=np.log(0.035), sigma=0.9, size=(N_MONTHS, N_SEGS)).clip(
         1e-6
     )
     mmp_normal = pr.mean(axis=0)
     mmp_extreme = np.percentile(pr, 95, axis=0)
 
-    # Monthly soil moisture (kg/m²): lognormal, moderately skewed
     mrso = RNG.lognormal(mean=np.log(40), sigma=0.6, size=(N_MONTHS, N_SEGS)).clip(0)
 
     return dict(
@@ -133,7 +127,7 @@ def _make_synthetic_data() -> dict:
 
 SEGS = _make_synthetic_data()
 
-# ── Core metric function ──────────────────────────────────────────────────────
+
 BASELINE = dict(
     NL=42.0,
     NH=8.0,
@@ -160,7 +154,6 @@ def compute_metrics(
     slope_pct = SEGS["slope_pct"]
     mrso = SEGS["mrso"]
 
-    # IRI under normal (mean precip) and extreme (P95 precip)
     iri_n = hdm4_iri_vec(
         SEGS["mmp_normal"], kcv, slope_pct, NL, NH, N_cov, MGD, IRI_min, IRI_0
     )
@@ -171,11 +164,10 @@ def compute_metrics(
     v_base_n = iri_to_speed(iri_n)
     v_base_e = iri_to_speed(iri_e)
 
-    # Passability: based on mrso percentiles
     mrso_pN = np.percentile(mrso, P_norm, axis=0)
     mrso_pE = np.percentile(mrso, P_extr, axis=0)
 
-    passable_n = (mrso <= mrso_pN).mean(axis=0)  # ≈ P_norm/100 by construction
+    passable_n = (mrso <= mrso_pN).mean(axis=0)
     ratio = np.where(mrso_pE > mrso_pN, mrso_pN / np.maximum(mrso_pE, 1e-6), 1.0)
     passable_e = passable_n * ratio
 
@@ -193,21 +185,20 @@ def compute_metrics(
     return mean_V_n, mean_V_e, mean_delta, mean_p_block
 
 
-# ── 1. Morris Elementary Effects analysis ────────────────────────────────────
 OUTPUT_NAMES = ["V_normal (km/h)", "V_extreme (km/h)", "ΔV (%)", "p_block"]
 
 PROBLEM = {
     "num_vars": 8,
     "names": ["NL", "NH", "N_cov", "MGD", "IRI_min", "IRI_0", "P_norm", "P_extr"],
     "bounds": [
-        [10, 80],  # NL
-        [2, 30],  # NH
-        [20, 100],  # N_cov
-        [0.2, 0.8],  # MGD
-        [8.0, 16.0],  # IRI_min
-        [4.0, 14.0],  # IRI_0
-        [65, 85],  # P_norm
-        [88, 99],  # P_extr
+        [10, 80],
+        [2, 30],
+        [20, 100],
+        [0.2, 0.8],
+        [8.0, 16.0],
+        [4.0, 14.0],
+        [65, 85],
+        [88, 99],
     ],
 }
 
@@ -215,7 +206,7 @@ if HAS_SALIB:
     print("Running Morris analysis  (r=20 → 180 evaluations) …")
     param_samples = morris_sample(PROBLEM, N=20, num_levels=4, seed=42)
 
-    Y = np.array([compute_metrics(*p) for p in param_samples])  # (180, 4)
+    Y = np.array([compute_metrics(*p) for p in param_samples])
 
     morris_rows: list[dict] = []
     for col, out_name in enumerate(OUTPUT_NAMES):
@@ -232,7 +223,6 @@ if HAS_SALIB:
 
     df_morris = pd.DataFrame(morris_rows)
 
-    # Morris diagram (μ* vs σ) for each output
     fig, axes = plt.subplots(2, 2, figsize=(11, 9))
     for ax, out_name in zip(axes.ravel(), OUTPUT_NAMES):
         sub = df_morris[df_morris["output"] == out_name]
@@ -266,13 +256,11 @@ if HAS_SALIB:
     plt.close()
     print(f"  → {out_morris}")
 
-    # Console summary table sorted by influence on ΔV%
     pivot = df_morris.pivot(index="parameter", columns="output", values="mu_star")
     pivot = pivot.sort_values("ΔV (%)", ascending=False)
     print("\nMorris μ*  (higher = more influential)\n", pivot.round(4).to_string())
 
 
-# ── 2. One-At-a-Time curves ───────────────────────────────────────────────────
 print("\nRunning OAT analysis …")
 
 OAT_GRID: dict[str, tuple[np.ndarray, str]] = {
@@ -335,7 +323,7 @@ plt.savefig(out_oat, dpi=150, bbox_inches="tight")
 plt.close()
 print(f"  → {out_oat}")
 
-# ── 3. Robustness summary table ───────────────────────────────────────────────
+
 df_oat = pd.DataFrame(oat_rows)
 
 

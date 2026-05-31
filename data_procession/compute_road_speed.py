@@ -23,9 +23,7 @@ from tqdm import tqdm
 
 warnings.filterwarnings("ignore")
 
-# =============================================================================
-# CONFIGURATION
-# =============================================================================
+
 BASE_DIR = Path("path/to")
 CLIMATE_DIR = BASE_DIR / "RAW/Climate_data"
 ROADS_DIR = BASE_DIR / "RAW/Road_data"
@@ -90,15 +88,13 @@ ALL_COUNTRIES = [
     "Zimbabwe",
 ]
 
-# =============================================================================
-# PHYSICAL CONSTANTS
-# =============================================================================
+
 HDM4_IRI_INIT = 6.0
 HDM4_DT = 1 / 12
 HDM4_ADT_U = 50
 HDM4_ADL_U = 42
 HDM4_ADH_U = 8
-HDM4_MGD = 0.5  # Mean gravel depth (m), not grading interval.
+HDM4_MGD = 0.5
 
 _R_NODES = np.array([6, 8, 10, 12, 14, 16, 18, 20], dtype=float)
 _V_NODES = np.array([106, 80, 64, 53, 46, 40, 35, 32], dtype=float)
@@ -107,9 +103,6 @@ MRSO_PASSABLE_PERCENTILE = 75
 MRSO_EXTREME_PERCENTILE = 95
 
 
-# =============================================================================
-# HDM-4 IRI
-# =============================================================================
 def hdm4_unpaved_iri(mmp_m, kcv, slope_pct, iri_start=HDM4_IRI_INIT):
     rg_max = max(
         21.4 - 32.4 * (0.5 - HDM4_MGD) ** 2 + 0.97 * kcv - 7.64 * slope_pct * mmp_m,
@@ -135,9 +128,6 @@ def iri_to_speed(iri):
     return float(np.interp(np.clip(iri, _R_NODES[0], _R_NODES[-1]), _R_NODES, _V_NODES))
 
 
-# =============================================================================
-# NETCDF DATA HANDLING
-# =============================================================================
 def find_nc_files(var, gcm, rcp, rcm, freq, years):
     pattern = f"{var}_AFR-44_{gcm}_{rcp}_r1i1p1_{rcm}_v1_{freq}_*.nc"
     selected = []
@@ -205,9 +195,6 @@ def road_to_cell(lons, lats, tree, grid_shape):
     return np.unravel_index(idx, grid_shape)
 
 
-# =============================================================================
-# CORE COMPUTATION
-# =============================================================================
 def compute_both_scenarios(roads_gdf, da_pr, da_mrso):
     """
     Computes normal (mean) and extreme (P95) scenarios simultaneously.
@@ -225,12 +212,10 @@ def compute_both_scenarios(roads_gdf, da_pr, da_mrso):
     pr_road = da_pr.values[:, pr_r, pr_c]
     mrso_road = da_mrso.values[:, mrso_r, mrso_c]
 
-    # Normal Scenario
     mmp_normal_mm = pr_road.mean(axis=0)
     mrso_p75 = np.percentile(mrso_road, MRSO_PASSABLE_PERCENTILE, axis=0)
     passable_normal = (mrso_road <= mrso_p75).mean(axis=0)
 
-    # Extreme Scenario
     mmp_extreme_mm = np.percentile(pr_road, MRSO_EXTREME_PERCENTILE, axis=0)
     mrso_p95 = np.percentile(mrso_road, MRSO_EXTREME_PERCENTILE, axis=0)
 
@@ -279,9 +264,6 @@ def compute_both_scenarios(roads_gdf, da_pr, da_mrso):
     return pd.DataFrame(results)
 
 
-# =============================================================================
-# ROAD NETWORK PROCESSING
-# =============================================================================
 def load_roads(country):
     shp = ROADS_DIR / country / f"{country}.shp"
     if not shp.exists():
@@ -321,9 +303,6 @@ def load_roads(country):
     return roads
 
 
-# =============================================================================
-# MAIN ORCHESTRATION
-# =============================================================================
 def process_country(country):
     print(f"\n{'=' * 60}")
     print(f"  Processing country: {country}")

@@ -26,7 +26,7 @@ Outputs:
 
 NOTE: NC files must be accessible on the local filesystem. Remote-mounted
 files can return OSError; download them first if that happens.
-Available GCM/RCP combos in 气象数据raw/:
+Available GCM/RCP combos in weather_data_raw/:
     MIROC-MIROC5  rcp26 / rcp45 / rcp85
     MPI-M-MPI-ESM-LR  rcp26 / rcp45 / rcp85
     NCC-NorESM1-M     rcp26 / rcp45 / rcp85
@@ -46,13 +46,11 @@ from tqdm import tqdm
 
 warnings.filterwarnings("ignore")
 
-# =============================================================================
-# DEFAULTS — override with --base-dir and --gcm / --rcp / --period / --window
-# =============================================================================
+
 _DEFAULT_BASE = Path("<BASE_DIR>")
 RCM = "SMHI-RCA4"
 
-# HDM-4 constants (same as compute_road_speed.py)
+
 HDM4_IRI_INIT = 6.0
 HDM4_DT = 1 / 12
 HDM4_ADT_U = 50
@@ -66,8 +64,8 @@ _V_NODES = np.array([106, 80, 64, 53, 46, 40, 35, 32], dtype=float)
 MRSO_PASSABLE_PERCENTILE = 75
 MRSO_EXTREME_PERCENTILE = 95
 
-PAVED_SPEED_NORMAL = 80.0  # km/h — paved roads unaffected by IRI model
-PAVED_SPEED_EXTREME = 65.0  # km/h — minor degradation on paved roads under flooding
+PAVED_SPEED_NORMAL = 80.0
+PAVED_SPEED_EXTREME = 65.0
 
 ALL_COUNTRIES = [
     "Algeria",
@@ -123,9 +121,6 @@ ALL_COUNTRIES = [
 ]
 
 
-# =============================================================================
-# HDM-4
-# =============================================================================
 def hdm4_unpaved_iri(mmp_m: float, kcv: float, slope_pct: float) -> float:
     rg_max = max(
         21.4 - 32.4 * (0.5 - HDM4_MGD) ** 2 + 0.97 * kcv - 7.64 * slope_pct * mmp_m,
@@ -151,9 +146,6 @@ def iri_to_speed(iri: float) -> float:
     return float(np.interp(np.clip(iri, _R_NODES[0], _R_NODES[-1]), _R_NODES, _V_NODES))
 
 
-# =============================================================================
-# NC FILE HANDLING
-# =============================================================================
 def _find_nc_files(climate_dir: Path, var: str, gcm: str, rcp: str, freq: str, years):
     pattern = f"{var}_AFR-44_{gcm}_{rcp}_r1i1p1_{RCM}_v1_{freq}_*.nc"
     selected = []
@@ -272,9 +264,6 @@ def _road_to_cell(lons, lats, tree, grid_shape):
     return np.unravel_index(idx, grid_shape)
 
 
-# =============================================================================
-# CORE: compute V_normal and V_extreme for one country
-# =============================================================================
 def compute_future_speeds(roads_gdf: pd.DataFrame, da_pr, da_mrso) -> pd.DataFrame:
     tree_pr, shape_pr = _build_kdtree(da_pr)
     tree_mrso, shape_mrso = _build_kdtree(da_mrso)
@@ -284,7 +273,7 @@ def compute_future_speeds(roads_gdf: pd.DataFrame, da_pr, da_mrso) -> pd.DataFra
     pr_r, pr_c = _road_to_cell(lons, lats, tree_pr, shape_pr)
     mrso_r, mrso_c = _road_to_cell(lons, lats, tree_mrso, shape_mrso)
 
-    pr_road = da_pr.values[:, pr_r, pr_c]  # shape (T, N_roads)
+    pr_road = da_pr.values[:, pr_r, pr_c]
     mrso_road = da_mrso.values[:, mrso_r, mrso_c]
 
     mmp_normal_mm = pr_road.mean(axis=0)
@@ -353,9 +342,6 @@ def compute_future_speeds(roads_gdf: pd.DataFrame, da_pr, da_mrso) -> pd.DataFra
     return pd.DataFrame(results)
 
 
-# =============================================================================
-# ROAD LOADING
-# =============================================================================
 def load_roads(country: str, roads_dir: Path) -> pd.DataFrame:
     shp = roads_dir / country / f"{country}.shp"
     if not shp.exists():
@@ -376,16 +362,13 @@ def load_roads(country: str, roads_dir: Path) -> pd.DataFrame:
     return gdf[gdf["length_km"] >= 0.1].reset_index(drop=True)
 
 
-# =============================================================================
-# MAIN
-# =============================================================================
 def main():
     parser = argparse.ArgumentParser(description="Generate future road speed CSVs")
     parser.add_argument("--base-dir", required=True)
     parser.add_argument(
         "--climate-dir",
         default=None,
-        help="Override climate NC directory (default: {base-dir}/RAW/Climate_data/气象数据raw)",
+        help="Override climate NC directory (default: {base-dir}/RAW/Climate_data/weather_data_raw)",
     )
     parser.add_argument(
         "--gcm", default="MPI-M-MPI-ESM-LR", help="GCM name as used in NC filenames"
@@ -409,7 +392,7 @@ def main():
     climate_dir = (
         Path(args.climate_dir)
         if args.climate_dir
-        else base / "RAW" / "Climate_data" / "气象数据raw"
+        else base / "RAW" / "Climate_data" / "weather_data_raw"
     )
     roads_dir = base / "RAW" / "Road_data"
     out_dir = base / "road_speed_future" / f"{args.gcm}_{args.rcp}_{args.period}"
@@ -432,7 +415,9 @@ def main():
     except FileNotFoundError as e:
         print(f"\n[ERROR] {e}")
         print("  NC files not found or not accessible.")
-        print("  Ensure 气象数据raw/ is locally accessible and contains files for:")
+        print(
+            "  Ensure weather_data_raw/ is locally accessible and contains files for:"
+        )
         print(f"    var=pr/mrso  gcm={args.gcm}  rcp={args.rcp}  years~{args.period}")
         return
 

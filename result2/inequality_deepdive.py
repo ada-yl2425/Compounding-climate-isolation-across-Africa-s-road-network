@@ -67,27 +67,17 @@ LABEL_COUNTRIES = {
 }
 
 
-# =============================================================================
-# LOAD
-# =============================================================================
 def load_data(base: Path) -> pd.DataFrame:
     path = base / "web" / "health_accessibility" / "country_accessibility_summary.csv"
     df = pd.read_csv(path)
 
-    # tail_gap_ratio is NaN when p50_delta = 0 (median impact = 0, i.e.,
-    # majority of population unaffected).  Treat as ratio = 1 for those
-    # countries (p90 / p50 undefined → no tail amplification).
     df["tail_gap_ratio_plot"] = df["tail_gap_ratio"].fillna(1.0)
 
-    # Remove WestSahara from most analyses (no real population)
     df = df[df["country"] != "WestSahara"].copy()
     print(f"  Countries loaded: {len(df)}")
     return df
 
 
-# =============================================================================
-# PANEL A — Tail amplification
-# =============================================================================
 def plot_tail_amplification(df: pd.DataFrame, out_dir: Path):
     """
     Scatter: x = p50_delta_h (median climate impact),
@@ -100,10 +90,8 @@ def plot_tail_amplification(df: pd.DataFrame, out_dir: Path):
 
     fig, axes = plt.subplots(1, 2, figsize=(14, 6))
 
-    # --- Left: p50 vs p90 scatter ---
     ax = axes[0]
 
-    # colour by tail_gap_ratio
     tgr = sub["tail_gap_ratio_plot"].values
     norm = mcolors.Normalize(vmin=1, vmax=np.percentile(tgr[np.isfinite(tgr)], 95))
     cmap = cm.get_cmap("YlOrRd")
@@ -120,14 +108,12 @@ def plot_tail_amplification(df: pd.DataFrame, out_dir: Path):
         zorder=3,
     )
 
-    # Reference lines
     x_max = sub["p90_delta_h"].max() * 1.05
     x_ref = np.linspace(0, sub["p50_delta_h"].max() * 1.05, 200)
     ax.plot(x_ref, x_ref, "k--", lw=1.0, alpha=0.4, label="1:1 (equal impact)")
     ax.plot(x_ref, 3 * x_ref, "b--", lw=1.0, alpha=0.5, label="3:1 (p90 = 3×p50)")
     ax.plot(x_ref, 5 * x_ref, "r--", lw=1.0, alpha=0.4, label="5:1")
 
-    # Labels
     for _, row in sub.iterrows():
         if row["country"] in LABEL_COUNTRIES:
             ax.annotate(
@@ -155,7 +141,6 @@ def plot_tail_amplification(df: pd.DataFrame, out_dir: Path):
     cbar.set_label("Tail-gap ratio  (p90Δ / p50Δ)", fontsize=9)
     ax.grid(alpha=0.2)
 
-    # Spearman: does higher p50 → even higher tail gap?
     valid = sub[["p50_delta_h", "tail_gap_ratio_plot"]].dropna()
     valid = valid[valid["p50_delta_h"] > 0]
     if len(valid) >= 5:
@@ -176,7 +161,6 @@ def plot_tail_amplification(df: pd.DataFrame, out_dir: Path):
             bbox=dict(boxstyle="round,pad=0.3", facecolor="lightyellow", alpha=0.85),
         )
 
-    # --- Right: tail_gap_ratio ranked bar ---
     ax2 = axes[1]
     bar_df = sub[["country", "tail_gap_ratio_plot", "pwmtt_normal"]].copy()
     bar_df = bar_df.sort_values("tail_gap_ratio_plot", ascending=True)
@@ -218,15 +202,11 @@ def plot_tail_amplification(df: pd.DataFrame, out_dir: Path):
     print(f"  Saved → tail_amplification.png")
 
 
-# =============================================================================
-# PANEL B — Gini change
-# =============================================================================
 def plot_gini_change(df: pd.DataFrame, out_dir: Path):
     sub = df.dropna(subset=["gini_normal", "delta_gini"]).copy()
 
     fig, axes = plt.subplots(1, 2, figsize=(14, 6))
 
-    # --- Left: gini_normal vs delta_gini scatter ---
     ax = axes[0]
 
     delta = sub["pwmtt_delta"].values
@@ -260,7 +240,6 @@ def plot_gini_change(df: pd.DataFrame, out_dir: Path):
                 color="#333333",
             )
 
-    # Trend line
     z = np.polyfit(sub["gini_normal"], sub["delta_gini"], 1)
     x_line = np.linspace(sub["gini_normal"].min(), sub["gini_normal"].max(), 100)
     ax.plot(x_line, np.poly1d(z)(x_line), "b-", lw=1.5, alpha=0.7)
@@ -299,7 +278,6 @@ def plot_gini_change(df: pd.DataFrame, out_dir: Path):
     ax.legend(fontsize=8)
     ax.grid(alpha=0.2)
 
-    # --- Right: ranked bar of delta_gini ---
     ax2 = axes[1]
     bar_df = sub[["country", "delta_gini", "pwmtt_normal"]].copy()
     bar_df = bar_df.sort_values("delta_gini", ascending=True)
@@ -346,9 +324,6 @@ def plot_gini_change(df: pd.DataFrame, out_dir: Path):
     print(f"  Saved → gini_change.png")
 
 
-# =============================================================================
-# STATS SUMMARY
-# =============================================================================
 def save_stats(df: pd.DataFrame, out_dir: Path):
     cols = [
         "country",
@@ -378,9 +353,6 @@ def save_stats(df: pd.DataFrame, out_dir: Path):
         print(f"      {row['country']:<18} {row['tail_gap_ratio_plot']:.2f}×")
 
 
-# =============================================================================
-# MAIN
-# =============================================================================
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--base", default=str(_DEFAULT_BASE))

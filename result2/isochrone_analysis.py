@@ -49,14 +49,10 @@ THRESHOLDS = [30, 60, 120, 240]
 THRESH_LABELS = ["30 min", "1 hour", "2 hours", "4 hours"]
 
 
-# =============================================================================
-# LOAD
-# =============================================================================
 def load_data(base: Path) -> pd.DataFrame:
     path = base / "web" / "health_accessibility" / "country_accessibility_summary.csv"
     df = pd.read_csv(path)
 
-    # Pre-compute shrinkage in percentage points for each threshold
     for t in THRESHOLDS:
         n_col = f"isochrone_pct_normal_T{t}min"
         e_col = f"isochrone_pct_extreme_T{t}min"
@@ -65,13 +61,9 @@ def load_data(base: Path) -> pd.DataFrame:
     return df
 
 
-# =============================================================================
-# FIGURE 1 — Isochrone coverage
-# =============================================================================
 def plot_isochrone_coverage(df: pd.DataFrame, out_dir: Path):
     fig, axes = plt.subplots(1, 2, figsize=(16, 7))
 
-    # ── Panel A: Grouped bar (T60, top 20 by shrinkage) ──────────────────────
     ax = axes[0]
     t = 60
     n_col = f"isochrone_pct_normal_T{t}min"
@@ -101,7 +93,6 @@ def plot_isochrone_coverage(df: pd.DataFrame, out_dir: Path):
         label="Extreme weather",
     )
 
-    # Shrinkage annotation
     for i, (_, row) in enumerate(top20.iterrows()):
         ax.text(
             max(row[n_col], row[e_col]) * 100 + 0.5,
@@ -125,7 +116,6 @@ def plot_isochrone_coverage(df: pd.DataFrame, out_dir: Path):
     ax.set_xlim(0, 115)
     ax.grid(axis="x", alpha=0.2)
 
-    # ── Panel B: Heatmap — all countries × 4 thresholds ─────────────────────
     ax2 = axes[1]
 
     hmap_df = df[["country"] + [f"shrink_{t}" for t in THRESHOLDS]].copy()
@@ -148,7 +138,6 @@ def plot_isochrone_coverage(df: pd.DataFrame, out_dir: Path):
     cbar = fig.colorbar(im, ax=ax2, pad=0.02, fraction=0.03)
     cbar.set_label("Coverage loss (pp)", fontsize=9)
 
-    # Mark structural-crisis countries (baseline T60 < 70%)
     crisis = set(df[df[f"isochrone_pct_normal_T60min"] < 0.70]["country"])
     for i, country in enumerate(hmap_df["country"]):
         if country in crisis:
@@ -172,15 +161,11 @@ def plot_isochrone_coverage(df: pd.DataFrame, out_dir: Path):
     print(f"  Saved → isochrone_coverage.png")
 
 
-# =============================================================================
-# FIGURE 2 — Double vulnerability (Spearman)
-# =============================================================================
 def plot_double_vulnerability(df: pd.DataFrame, out_dir: Path):
     sub = df.dropna(subset=["spearman_rho", "spearman_pval", "pwmtt_normal"]).copy()
 
     fig, axes = plt.subplots(1, 2, figsize=(14, 6))
 
-    # ── Panel A: Histogram of within-country Spearman ρ ──────────────────────
     ax = axes[0]
 
     rho_vals = sub["spearman_rho"].values
@@ -237,7 +222,6 @@ def plot_double_vulnerability(df: pd.DataFrame, out_dir: Path):
     ax.legend(handles=legend_elements, fontsize=9, loc="lower right")
     ax.grid(axis="x", alpha=0.2)
 
-    # ── Panel B: PWMTT baseline vs Spearman ρ ────────────────────────────────
     ax2 = axes[1]
 
     delta = sub["pwmtt_delta"].values
@@ -256,7 +240,6 @@ def plot_double_vulnerability(df: pd.DataFrame, out_dir: Path):
         zorder=3,
     )
 
-    # Country labels for notable cases
     label_set = {
         "Kenya",
         "Chad",
@@ -280,7 +263,6 @@ def plot_double_vulnerability(df: pd.DataFrame, out_dir: Path):
                 color="#333333",
             )
 
-    # Trend line
     valid = sub[["pwmtt_normal", "spearman_rho"]].dropna()
     z = np.polyfit(valid["pwmtt_normal"], valid["spearman_rho"], 1)
     x_line = np.linspace(valid["pwmtt_normal"].min(), valid["pwmtt_normal"].max(), 100)
@@ -323,9 +305,6 @@ def plot_double_vulnerability(df: pd.DataFrame, out_dir: Path):
     print(f"  Saved → double_vulnerability.png")
 
 
-# =============================================================================
-# MAIN
-# =============================================================================
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--base", default=str(_DEFAULT_BASE))

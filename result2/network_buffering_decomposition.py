@@ -66,9 +66,7 @@ from scipy.spatial import cKDTree
 
 warnings.filterwarnings("ignore")
 
-# =============================================================================
-# CONFIGURATION  (mirrors compute_health_accessibility.py)
-# =============================================================================
+
 BASE_DIR_DEFAULT = Path("path/to/base")
 
 SNAP_THRESHOLD_DEG = 0.0045
@@ -78,9 +76,9 @@ MAX_HEALTH_SNAP_KM = 50.0
 
 SUPER_SRC = "__super__"
 
-# Percentile windows for grouping nodes
-P50_LO, P50_HI = 0.40, 0.60  # 40th–60th percentile of baseline travel time
-P90_LO = 0.80  # 80th–100th percentile
+
+P50_LO, P50_HI = 0.40, 0.60
+P90_LO = 0.80
 
 WORLDPOP_PREFIX = {
     "Algeria": "dza",
@@ -136,9 +134,6 @@ WORLDPOP_PREFIX = {
 }
 
 
-# =============================================================================
-# GRAPH BUILDING  (copied from compute_health_accessibility.py)
-# =============================================================================
 def _merge_endpoints(pts_arr, same_pairs, threshold):
     N = len(pts_arr)
     parent = list(range(N))
@@ -301,9 +296,6 @@ def snap_health_to_network(health_df: pd.DataFrame, node_coords: dict) -> list:
     return list(set(snapped))
 
 
-# =============================================================================
-# CORE: PREDECESSOR-TREE BUFFERING DECOMPOSITION
-# =============================================================================
 def compute_direct_degradation(
     G0: nx.Graph,
     G1: nx.Graph,
@@ -325,20 +317,17 @@ def compute_direct_degradation(
     Returns:
         dict mapping node_id → {t_normal_path, t_g1_forced_path, direct_degradation}
     """
-    # Augmented G0 with super-source
+
     H0 = G0.copy()
     H0.add_node(SUPER_SRC)
     for h in health_nodes:
         if h in H0:
             H0.add_edge(SUPER_SRC, h, weight=0.0)
 
-    # Dijkstra with predecessor tracking from super-source
     pred, dist = nx.dijkstra_predecessor_and_distance(H0, SUPER_SRC, weight="weight")
 
-    # Walk tree in topological order (ascending distance = guaranteed parent-before-child)
     nodes_sorted = sorted(dist.items(), key=lambda x: x[1])
 
-    # dp[node] = cost of G0-optimal path traversed with G1 edge weights
     dp = {}
     for node, _ in nodes_sorted:
         if node is SUPER_SRC or node == SUPER_SRC:
@@ -348,14 +337,14 @@ def compute_direct_degradation(
         if not par_list:
             dp[node] = float("inf")
             continue
-        par = par_list[0]  # pick one predecessor (tie-break: first found)
+        par = par_list[0]
         if par == SUPER_SRC:
-            # Node is a health facility — zero road cost to itself
+
             dp[node] = 0.0
         elif G1.has_edge(par, node):
             dp[node] = dp.get(par, float("inf")) + G1[par][node]["weight"]
         else:
-            # Edge exists in G0 but not G1 (shouldn't happen; fallback to inf)
+
             dp[node] = float("inf")
 
     result = {}
@@ -371,9 +360,6 @@ def compute_direct_degradation(
     return result
 
 
-# =============================================================================
-# BUFFERING RATIO AND PERCENTILE GROUPING
-# =============================================================================
 def build_node_dataframe(
     decomp: dict,
     node_list: list,
@@ -405,7 +391,7 @@ def build_node_dataframe(
             buf = 1.0 - delta_t / dd
             buf = float(np.clip(buf, 0.0, 1.0))
         elif dd == 0.0:
-            # No degradation on G0 path → buffering is trivially 1
+
             buf = 1.0 if delta_t == 0 else 0.0
         else:
             buf = float("nan")
@@ -510,14 +496,12 @@ def buffering_stats_from_groups(df_grouped: pd.DataFrame) -> dict:
         stats[f"pwmean_buffering_{grp}"] = float(np.sum(w * buf))
         stats[f"mean_buffering_{grp}"] = float(buf.mean())
 
-        # Fraction of nodes facing non-zero direct degradation that absorb some of it
         dd_vals = sub["direct_degradation"].values
         sub_facing_dd = buf[dd_vals > 0]
         stats[f"frac_positive_buffering_{grp}"] = (
             float((sub_facing_dd > 0.01).mean()) if len(sub_facing_dd) > 0 else np.nan
         )
 
-        # Local road-condition vulnerability (direct degradation per travel hour)
         dd = sub["direct_degradation"].values
         tn = sub["t_normal"].values
         valid_dn = tn > 0
@@ -528,7 +512,6 @@ def buffering_stats_from_groups(df_grouped: pd.DataFrame) -> dict:
         else:
             stats[f"mean_dd_intensity_{grp}"] = np.nan
 
-        # Actual climate impact per travel hour
         ad = sub["actual_delta"].values
         if valid_dn.sum() > 0:
             stats[f"mean_actual_intensity_{grp}"] = float(
@@ -547,7 +530,6 @@ def buffering_stats_from_groups(df_grouped: pd.DataFrame) -> dict:
 
         stats[f"n_nodes_{grp}"] = len(sub)
 
-    # Cross-group comparisons
     mb50 = stats["pwmean_buffering_p50"]
     mb90 = stats["pwmean_buffering_p90"]
     if np.isfinite(mb50) and np.isfinite(mb90) and mb90 > 0:
@@ -560,9 +542,6 @@ def buffering_stats_from_groups(df_grouped: pd.DataFrame) -> dict:
     return stats
 
 
-# =============================================================================
-# PER-COUNTRY PIPELINE
-# =============================================================================
 def process_country(
     country: str,
     base_dir: Path,
@@ -594,7 +573,6 @@ def process_country(
     print(f"\n{'='*60}\n  {country}  ({len(health_df)} health facilities)\n{'='*60}")
     t_start = time.time()
 
-    # --- Build graphs ---
     print("  [1/4] Building road network graphs ...")
     G0, G1, node_coords = build_graphs(shp_path, iri_path)
 
@@ -612,23 +590,19 @@ def process_country(
         return None
     print(f"  {len(health_nodes)} unique health-facility anchor nodes")
 
-    # --- Predecessor-tree decomposition ---
     print("  [2/4] Computing G0 predecessor tree and G1 forced-path costs ...")
     decomp = compute_direct_degradation(G0, G1, health_nodes)
 
-    # --- Load t_extreme from node_accessibility CSV (already computed) ---
     print("  [3/4] Loading pre-computed extreme travel times and population ...")
     node_acc = pd.read_csv(node_acc_path)
     t_extreme_map = dict(zip(node_acc["node_id"], node_acc["t_extreme"]))
     pop_series = node_acc.set_index("node_id")["population"]
     pop_arr = np.array([pop_series.get(n, 0.0) for n in node_list])
 
-    # --- Build per-node DataFrame and assign percentile groups ---
     print("  [4/4] Computing buffering ratios and percentile groups ...")
     node_df = build_node_dataframe(decomp, node_list, t_extreme_map, pop_arr)
     node_df["country"] = country
 
-    # Add node degree (proxy for topological redundancy)
     degree_map = dict(G0.degree())
     node_df["degree"] = node_df["node_id"].map(degree_map).fillna(0).astype(int)
 
@@ -695,9 +669,6 @@ def process_country(
     return summary
 
 
-# =============================================================================
-# CONTINENT-LEVEL AGGREGATION
-# =============================================================================
 def aggregate_continent(df: pd.DataFrame) -> dict:
     """Country-level aggregate of buffering statistics across all countries."""
     valid = df.dropna(subset=["pwmean_buffering_p50", "pwmean_buffering_p90"]).copy()
@@ -706,12 +677,10 @@ def aggregate_continent(df: pd.DataFrame) -> dict:
     p50_exceeds = valid["pwmean_buffering_p50"] > valid["pwmean_buffering_p90"]
     p50_exceeds_2x = valid["buffering_ratio_p50_over_p90"].fillna(0) >= 2.0
 
-    # Test whether dd_intensity differs: if similar, network is the mechanism
     dd_ratio = valid["mean_dd_intensity_p90"] / valid["mean_dd_intensity_p50"]
 
     return {
         "n_countries": n,
-        # Primary: population-weighted mean buffering by group
         "continent_median_pwmean_buffering_p50": float(
             valid["pwmean_buffering_p50"].median()
         ),
@@ -724,7 +693,6 @@ def aggregate_continent(df: pd.DataFrame) -> dict:
         "continent_mean_pwmean_buffering_p90": float(
             valid["pwmean_buffering_p90"].mean()
         ),
-        # Cross-country counts
         "n_countries_p50_exceeds_p90": int(p50_exceeds.sum()),
         "pct_countries_p50_exceeds_p90": float(p50_exceeds.mean() * 100),
         "n_countries_p50_gt2x_p90": int(p50_exceeds_2x.sum()),
@@ -732,7 +700,6 @@ def aggregate_continent(df: pd.DataFrame) -> dict:
         "median_p50_over_p90_ratio": float(
             valid["buffering_ratio_p50_over_p90"].median()
         ),
-        # DD intensity comparison (do local road conditions differ?)
         "continent_median_dd_intensity_p50": float(
             valid["mean_dd_intensity_p50"].median()
         ),
@@ -740,10 +707,8 @@ def aggregate_continent(df: pd.DataFrame) -> dict:
             valid["mean_dd_intensity_p90"].median()
         ),
         "median_dd_ratio_p90_over_p50": float(dd_ratio.median()),
-        # Degree comparison (structural network evidence)
         "continent_mean_degree_p50": float(valid["mean_degree_p50"].mean()),
         "continent_mean_degree_p90": float(valid["mean_degree_p90"].mean()),
-        # Fraction with positive buffering (addresses zero-inflation)
         "continent_mean_frac_positive_p50": float(
             valid["frac_positive_buffering_p50"].mean()
         ),
@@ -753,9 +718,6 @@ def aggregate_continent(df: pd.DataFrame) -> dict:
     }
 
 
-# =============================================================================
-# MAIN
-# =============================================================================
 def main():
     parser = argparse.ArgumentParser(
         description="Decompose climate travel-time increase into direct degradation and network buffering"

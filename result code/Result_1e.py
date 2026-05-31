@@ -10,7 +10,6 @@ from typing import Iterable, Optional, Tuple
 import numpy as np
 from PIL import Image, ImageDraw
 
-
 ROOT = Path(__file__).resolve().parent
 QGIS_PYTHON = "/Applications/QGIS.app/Contents/MacOS/python"
 BACKGROUND_SCRIPT = ROOT / "export_unpaved_background_qgis.py"
@@ -20,8 +19,8 @@ ROAD_COLOR_PATH = ROOT / "_unpaved_roads_color.png"
 TILE_DIR = ROOT / "_unpaved_tile_cache"
 
 DATA_CANDIDATES = [
-    Path("/Users/suhang/Downloads/unpaved_delta_v (1).gpkg"),
-    Path("/Users/suhang/Downloads/unpaved_delta_v.gpkg"),
+    Path("<LOCAL_DOWNLOAD_ROOT>/unpaved_delta_v (1).gpkg"),
+    Path("<LOCAL_DOWNLOAD_ROOT>/unpaved_delta_v.gpkg"),
     ROOT / "unpaved_delta_v.gpkg",
 ]
 
@@ -80,7 +79,9 @@ def bin_index(loss: float) -> int:
     return 4
 
 
-def geometry_offset_and_bounds(blob: bytes) -> Tuple[int, Optional[Tuple[float, float, float, float]]]:
+def geometry_offset_and_bounds(
+    blob: bytes,
+) -> Tuple[int, Optional[Tuple[float, float, float, float]]]:
     flags = blob[3]
     endian = "<" if (flags & 1) else ">"
     env_code = (flags >> 1) & 0b111
@@ -122,11 +123,15 @@ def iter_lines(blob: bytes) -> Iterable[np.ndarray]:
             continue
         dtype = np.dtype("<f8" if sub_endian == "<" else ">f8")
         coord_offset = start + 9
-        coords = np.frombuffer(mv[coord_offset : coord_offset + point_count * 16], dtype=dtype).reshape(point_count, 2)
+        coords = np.frombuffer(
+            mv[coord_offset : coord_offset + point_count * 16], dtype=dtype
+        ).reshape(point_count, 2)
         yield coords
 
 
-def tile_bounds(col: int, row: int) -> Tuple[int, int, int, int, float, float, float, float]:
+def tile_bounds(
+    col: int, row: int
+) -> Tuple[int, int, int, int, float, float, float, float]:
     x0 = round(col * MAP_W / COLS)
     x1 = round((col + 1) * MAP_W / COLS)
     y0 = round(row * MAP_H / ROWS)
@@ -199,7 +204,12 @@ def render_tile(col: int, row: int, force: bool = False) -> None:
             for coords in iter_lines(geom):
                 xs = coords[:, 0]
                 ys = coords[:, 1]
-                if xs.max() < lon0 or xs.min() > lon1 or ys.max() < lat0 or ys.min() > lat1:
+                if (
+                    xs.max() < lon0
+                    or xs.min() > lon1
+                    or ys.max() < lat0
+                    or ys.min() > lat1
+                ):
                     continue
 
                 px = np.rint((xs - lon0) * x_scale).astype(np.int32)
@@ -209,7 +219,9 @@ def render_tile(col: int, row: int, force: bool = False) -> None:
                 drawn += 1
 
         if processed % 100000 == 0:
-            print(f"tile r{row} c{col}: processed {processed} features, drew {drawn} polylines")
+            print(
+                f"tile r{row} c{col}: processed {processed} features, drew {drawn} polylines"
+            )
 
     conn.close()
 
@@ -251,7 +263,12 @@ def compose_final() -> None:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--force", action="store_true")
-    parser.add_argument("--only-tile", type=int, default=None, help="0-based tile index in row-major order")
+    parser.add_argument(
+        "--only-tile",
+        type=int,
+        default=None,
+        help="0-based tile index in row-major order",
+    )
     parser.add_argument("--skip-compose", action="store_true")
     parser.add_argument("--skip-background", action="store_true")
     args = parser.parse_args()

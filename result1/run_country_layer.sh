@@ -1,7 +1,4 @@
 #!/bin/bash
-# run_country_layer.sh
-# Runs country layer (OD matrix analysis) for all 50 countries.
-# Execute: bash web/run_country_layer.sh
 
 BASE="path/to/your/base/directory"
 ROADS="$BASE/RAW/Road_data"
