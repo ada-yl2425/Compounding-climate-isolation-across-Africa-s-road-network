@@ -37,7 +37,7 @@ population_and_boundaries:
   worldpop_missing_input_policy: FAIL_CLOSED_LOCAL_AND_REMOTE_TEST_PASS
   official_country_result_count: 49
   africa_city_od_node_count: 83
-  gadm_admin_level: L2_47_COUNTRIES_L1_LSO_LBY_REMOTE_49_OF_49_FINAL_PASS_ICLOUD_ARCHIVE_PENDING
+  gadm_admin_level: L2_47_COUNTRIES_L1_LSO_LBY_REMOTE_49_OF_49_FINAL_PASS_LOCAL_ICLOUD_DIRECTORY_98_OF_98_HASH_PASS_MACOS_CLOUD_SYNC_CAUGHT_UP
 
 release_requirements:
   - model_units_and_source_documented

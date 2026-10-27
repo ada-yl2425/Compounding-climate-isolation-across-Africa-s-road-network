@@ -158,6 +158,8 @@
 
 边界专项再更新：`4480326.pbs-7` 的旧验收器因 GPKG `GEOMETRY` 元数据误判失败；修订验收器在 43 国逐条确认实际几何为有效 Polygon/MultiPolygon，`4480528.pbs-7` 已 `PASS`，49/49 国、6,500 个行政单元。远端 manifest/summary/整包地址、SHA-256 和 48+1 血缘见 [GADM_GHANA_EXCEPTION_2026-10-27.md](GADM_GHANA_EXCEPTION_2026-10-27.md)。这是**边界工程输入已通过远端校验**；iCloud 整包传输中断，副本仍待校验，且 C05/C06 医疗审稿结果、人口分母与其余 C00–C16 均不因此完成。
 
+边界专项最新归档（覆盖上段“iCloud 副本待校验”的旧状态）：经临时 Google Drive 单包中转，整包本地 SHA-256 与远端 `3f80b2e38914244e5c677a5fa0a2b129420d6727bad6f1f1aee9507d7b2ae76e` 一致。已解包到 iCloud Drive 本机目录 `africa pavement/02_derived_checkpoints/boundaries/gadm41_admin_49country_f0a701b_gha961ead5_20261027/`；按终验 manifest 对 49 个 GPKG 和 49 个 QC JSON 逐文件复核，98/98 哈希匹配，manifest 与 summary 哈希也一致。macOS iCloud 状态显示同步空闲、已追平，且目标目录没有待上传项目；**本机 iCloud 目录副本验证 PASS，云端逐文件哈希没有独立复读**。已清理失败的 `.partial`、本地下载临时包和 Google Drive 中转包。这只放行 GADM 边界预处理输入，不放行人口分母、医疗分析或任何 C00–C16 审稿科学重算。
+
 ## 本地与远程的分工、传输方案
 
 本地做 C00 样本核查、C01 口径与单测、C07/C11/C16 小表聚合及最终 QA；远程做 C02 的国×情景路段计算、C03/04 网络最短路、C05/06/08/09 医疗与栅格、C10/12/13/14 大图和重复模拟。远程资源不是已配置就绪；需先确认可用集群、CPU/内存/磁盘配额和可访问的对象存储。泛非图建议单个高内存任务，国别和随机重复用数组任务；避免同机同时启动 50 个大图进程。
