@@ -161,6 +161,39 @@ def _find_nc_files(climate_dir: Path, var: str, gcm: str, rcp: str, freq: str, y
     return sorted(selected)
 
 
+def precipitation_flux_to_monthly_mm(ds):
+    """Integrate monthly mean CORDEX pr over CF bounds or calendar month length."""
+    pr = ds["pr"]
+    if pr.attrs.get("units") != "kg m-2 s-1":
+        raise ValueError(
+            f"Expected pr units 'kg m-2 s-1', got {pr.attrs.get('units')!r}"
+        )
+
+    bounds_name = ds["time"].attrs.get("bounds")
+    if bounds_name is not None:
+        if bounds_name not in ds:
+            raise ValueError(f"time bounds variable {bounds_name!r} is missing")
+        bounds = ds[bounds_name]
+        if bounds.ndim != 2 or bounds.dims[0] != "time" or bounds.shape[1] != 2:
+            raise ValueError(
+                f"Invalid time bounds shape for {bounds_name!r}: {bounds.shape}"
+            )
+        bound_dim = bounds.dims[1]
+        seconds = (
+            bounds.isel({bound_dim: 1}) - bounds.isel({bound_dim: 0})
+        ) / np.timedelta64(1, "s")
+    else:
+        seconds = ds["time"].dt.days_in_month * 86400
+
+    if not bool(((seconds > 0) & np.isfinite(seconds)).all()):
+        raise ValueError(
+            "Precipitation time intervals must have positive finite duration"
+        )
+    monthly_mm = pr * seconds
+    monthly_mm.attrs = {"units": "mm", "cell_methods": "time: sum"}
+    return monthly_mm
+
+
 def _load_monthly_pr(climate_dir, gcm, rcp, years):
     mon_files = _find_nc_files(climate_dir, "pr", gcm, rcp, "mon", years)
     if mon_files:
@@ -169,7 +202,8 @@ def _load_monthly_pr(climate_dir, gcm, rcp, years):
         for f in mon_files:
             try:
                 ds = xr.open_dataset(str(f), engine="h5netcdf")
-                da = (ds["pr"] * 86400 * 30).sel(time=ds["pr"].time.dt.year.isin(years))
+                monthly_mm = precipitation_flux_to_monthly_mm(ds)
+                da = monthly_mm.sel(time=monthly_mm.time.dt.year.isin(years))
                 if len(da.time) > 0:
                     chunks.append(da.load())
                 ds.close()

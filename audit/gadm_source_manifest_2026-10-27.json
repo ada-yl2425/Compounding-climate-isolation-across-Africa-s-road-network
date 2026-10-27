@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "purpose": "G1 shared boundary source staging; layer extraction is not yet scientifically released",
+  "source_root": "/Users/tuibubansurfacepro/Library/Mobile Documents/com~apple~CloudDocs/africa pavement",
+  "files": [
+    {
+      "path": "01_sources/boundaries/GADM_v4.1_global_candidate/GADM边界.zip",
+      "bytes": 1466771821,
+      "sha256": "4eb416375d9352654bb55f205cc710db3f0568503011724971be7eb6b4cc861c"
+    }
+  ]
+}

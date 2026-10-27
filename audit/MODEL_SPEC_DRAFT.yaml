@@ -1,0 +1,46 @@
+# Reviewer recalculation specification registry. This is NOT an executable
+# science-run configuration until release_status changes to PASS with evidence.
+schema_version: 1
+release_status: BLOCKED
+last_updated: 2026-10-27
+
+iri_progression:
+  step_size: 0.08333333333333333
+  step_unit: year
+  steps: 12
+  decision: user_confirmed_keep_submitted_implementation
+  caveat: original_empirical_coefficient_uses_day_scale; no_recalibration_claim
+  iri_initial_m_per_km: 6.0
+  equilibrium_floor_m_per_km: 12.0
+  floor_applies_to: target_not_every_intermediate_iri
+  mgd_numeric_value: 0.5
+  mgd_definition_and_evidence: UNRESOLVED
+
+climate:
+  baseline_window: 2011-01_to_2020-12
+  precipitation_flux_to_month_total: ACTUAL_CF_BOUNDS_OR_CALENDAR_DAYS_LOCAL_TEST_PASS_REMOTE_TEST_PENDING
+  monthly_iteration_input: UNRESOLVED_120_MONTH_SEQUENCE_VS_REPRESENTATIVE_MONTH
+  future_windows: UNRESOLVED_10_VS_11_YEARS
+
+road_geometry:
+  physical_edge_id_crosswalk: RAW_SOURCE_ROW_VS_POST_FILTER_RENUMBER_MISMATCH_CONFIRMED_FIX_PENDING
+  curvature_derivation: UNRESOLVED
+  slope_source_and_units: UNRESOLVED
+
+network:
+  parallel_physical_edges: LEGACY_NX_GRAPH_COLLAPSE_CONFIRMED_FIX_PENDING
+  passability_speed_and_edge_weight_semantics: LEGACY_DOUBLE_PASSABILITY_PENALTY_CONFIRMED_SCIENTIFIC_DECISION_PENDING
+  west_sahara_road_transit_rule: UNRESOLVED
+
+population_and_boundaries:
+  worldpop_missing_input_policy: FAIL_CLOSED_LOCAL_AND_REMOTE_TEST_PASS
+  official_country_result_count: 49
+  africa_city_od_node_count: 83
+  gadm_admin_level: L2_WHERE_AVAILABLE_ELSE_L1_PILOT_IN_PROGRESS
+
+release_requirements:
+  - model_units_and_source_documented
+  - climate_calendar_and_time_window_tests_pass
+  - physical_edge_and_graph_weight_tests_pass
+  - population_and_boundary_denominators_pass
+  - kenya_compute_node_end_to_end_pilot_pass

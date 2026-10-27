@@ -19,6 +19,14 @@
 
 **G0 尚未 PASS**：这些是已找到的冲突及明确待决问题，不是已经选择的修正模型。不能启动正式 cx3 科学数组或将旧结果标为验证通过。
 
+**2026-10-27 用户决定（仅时间步长）**：正式复现采用稿件与当前代码一致的 `Δt=1/12 年`、12 次更新；不擅自替换成每月约 30 天。此决定锁定的是“投稿实现复现口径”，**不是**证明所引经验系数已按年重新标定。修订方法/SI 仍须透明说明与原始模型时间单位的差异；MGD 定义/取值依据、30 天固定降水换算、聚合后的代表月循环、未来 10/11 年窗口、通行率双应用及图边问题尚未随之放行。
+
 cx3 工程证据：Kenya RAR schema 作业 `4479850.pbs-7`，`Exit_status=0`；结构报告 `/rds/general/user/yl2425/ephemeral/africa_pavement_recalc/pilot-20261027-e3bd600/results/kenya_road_schema_qc.json`。此状态只证明该包可读与字段构成，不证明路网拓扑、原稿版本一致性或路段空间真实性。
 
 四路段 ID/几何抽样对齐报告：同目录 `results/kenya_road_alignment_samples.json`，SHA-256 `2eadeee70a1e188d2d150337f917d30a8fb10ea4c993b38115ffcc1678707401`。对照旧 iCloud `02_derived_checkpoints/legacy_reference/road_speed_cordex.zip` 内 `road_speed_cordex/Kenya_road_speed.csv` 的四行；此为历史数据血缘核查，不是新科学速度结果。
+
+cx3 输入无关的微型 fixture（`tests/test_recalc_invariants.py`，完整 Python 3.11/地理环境）在临时部署时得到 `3 passed, 3 xfailed`。使用 `--runxfail` 复核三个失败**确实到达目标断言**：2021 年 2/3 月恒定通量都换算为 30 天的 2,592,000，而期望分别为 2,419,200/2,678,400；平行路 A/B 正常时间 1/2、极端时间 10/2，旧图给 10 而物理多边最优为 2；缺 WorldPop 时返回 `[1,1]`。这些 xfail 是待修复缺陷证据，**不计为科学模型测试通过**。本机因缺 `geopandas` 只能运行其余部分，远端额外补装 `tqdm` 才能导入速度模块。
+
+后续工程修正：基准与未来降水载入器现按 NetCDF `time_bnds` 精确时段秒数积分；没有边界时按 CF 日历月长；IRI `HDM4_DT=1/12` 未变。cx3 旧版 xarray 不支持最初使用的 `.dt.total_seconds()`，已改为时段差除以 `np.timedelta64(1, "s")`；临时部署复测为 `12 passed, 4 skipped, 2 xfailed`。跳过和预期失败分别包括未修复的图／人口口径，不能据此放行 G0。新独立 `recalc/physical_edges.py` 及 7 项微测保留原始路段 ID、平行边和情景独立最优边，但**尚未接入旧五条正式管线**，也没有替用户确定通行率重复计入是否代表两个独立过程。
+
+医疗人口载入器随后取消缺失／损坏 WorldPop 栅格时的 `pop=1` 回退；无正人口值亦报错，避免继续写出貌似有效的公平性统计。本机全套回归 `27 passed, 2 skipped`；cx3 本轮相关测试 `13 passed, 4 skipped, 1 xfailed`。剩余预期失败仍为旧图平行边问题。这是失败即停止的工程防护，既不补足排除人口登记，也不构成医疗新结果。

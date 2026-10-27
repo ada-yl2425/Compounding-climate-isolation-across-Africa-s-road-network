@@ -1,0 +1,38 @@
+#!/bin/bash -l
+#PBS -l select=1:ncpus=2:mem=12gb
+#PBS -l walltime=02:00:00
+#PBS -N gadm_ke_pilot
+
+# Engineering-only boundary extraction. It does not release any science array.
+set -euo pipefail
+: "${PILOT_ROOT:?PILOT_ROOT is required}"
+: "${GADM_ROOT:?GADM_ROOT is required}"
+cd "$PILOT_ROOT/code"
+
+module load tools/prod p7zip/17.04-GCCcore-12.3.0 \
+  geopandas/0.14.2-foss-2023a \
+  xarray/2023.9.0-gfbf-2023a \
+  python-igraph/0.11.4-foss-2023a \
+  Arrow/16.1.0-gfbf-2023b
+
+"$PILOT_ROOT/venv/bin/python" -m hpc.verify_manifest \
+  --manifest "$PILOT_ROOT/code/audit/gadm_source_manifest_2026-10-27.json" \
+  --root "$GADM_ROOT"
+
+ARCHIVE="$GADM_ROOT/01_sources/boundaries/GADM_v4.1_global_candidate/GADM边界.zip"
+WORK="$PILOT_ROOT/work/gadm_kenya_${PBS_JOBID%%.*}"
+OUTPUT="$PILOT_ROOT/results/gadm41_KEN_2_pilot.gpkg"
+REPORT="$PILOT_ROOT/results/gadm41_KEN_2_pilot_qc.json"
+if [[ -e "$OUTPUT" || -e "$REPORT" ]]; then
+  echo "Pilot output already exists; refusing to overwrite" >&2
+  exit 1
+fi
+mkdir -p "$WORK"
+7z x -y "$ARCHIVE" "-o$WORK" >/dev/null
+"$PILOT_ROOT/venv/bin/python" -m hpc.extract_gadm_admin \
+  --input "$WORK/gadm_410.gpkg" \
+  --country KEN \
+  --output "$OUTPUT" \
+  --report "$REPORT"
+
+echo "ENGINEERING_GADM_KENYA_PASS job=${PBS_JOBID:-unknown}"

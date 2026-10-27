@@ -143,11 +143,49 @@ def find_nc_files(var, gcm, rcp, rcm, freq, years):
     return sorted(selected)
 
 
+def precipitation_flux_to_monthly_mm(ds):
+    """Integrate a monthly mean precipitation flux over its actual CF interval.
+
+    CORDEX ``pr`` is kg m-2 s-1, numerically mm s-1 of liquid water.
+    Prefer the file's time bounds; when absent, use the CF calendar's month
+    length (including noleap/360_day calendars) instead of a fixed 30 days.
+    """
+    pr = ds["pr"]
+    if pr.attrs.get("units") != "kg m-2 s-1":
+        raise ValueError(
+            f"Expected pr units 'kg m-2 s-1', got {pr.attrs.get('units')!r}"
+        )
+
+    bounds_name = ds["time"].attrs.get("bounds")
+    if bounds_name is not None:
+        if bounds_name not in ds:
+            raise ValueError(f"time bounds variable {bounds_name!r} is missing")
+        bounds = ds[bounds_name]
+        if bounds.ndim != 2 or bounds.dims[0] != "time" or bounds.shape[1] != 2:
+            raise ValueError(
+                f"Invalid time bounds shape for {bounds_name!r}: {bounds.shape}"
+            )
+        bound_dim = bounds.dims[1]
+        seconds = (
+            bounds.isel({bound_dim: 1}) - bounds.isel({bound_dim: 0})
+        ) / np.timedelta64(1, "s")
+    else:
+        seconds = ds["time"].dt.days_in_month * 86400
+
+    if not bool(((seconds > 0) & np.isfinite(seconds)).all()):
+        raise ValueError(
+            "Precipitation time intervals must have positive finite duration"
+        )
+    monthly_mm = pr * seconds
+    monthly_mm.attrs = {"units": "mm", "cell_methods": "time: sum"}
+    return monthly_mm
+
+
 def load_monthly_pr(gcm, rcp, rcm, years):
     mon_files = find_nc_files("pr", gcm, rcp, rcm, "mon", years)
     if mon_files:
         ds = xr.open_mfdataset(mon_files, combine="by_coords", engine="h5netcdf")
-        da = ds["pr"] * 86400 * 30
+        da = precipitation_flux_to_monthly_mm(ds)
         return da.sel(time=da.time.dt.year.isin(years)).load()
 
     day_files = find_nc_files("pr", gcm, rcp, rcm, "day", years)

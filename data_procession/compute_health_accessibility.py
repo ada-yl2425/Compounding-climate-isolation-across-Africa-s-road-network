@@ -349,8 +349,7 @@ def aggregate_population_to_nodes(
 
         rows, cols = np.where(data > 0)
         if len(rows) == 0:
-            print("    [WARN] Population raster has no positive values")
-            return np.zeros(len(node_list), dtype=float)
+            raise ValueError(f"Population raster has no positive values: {pop_tif}")
 
         pix_lons = transform.c + (cols + 0.5) * transform.a
         pix_lats = transform.f + (rows + 0.5) * transform.e
@@ -387,8 +386,7 @@ def aggregate_population_to_nodes(
         return pop_per_node
 
     except Exception as exc:
-        print(f"    [WARN] Population aggregation failed: {exc} — using uniform weight")
-        return np.ones(len(node_list), dtype=float)
+        raise RuntimeError(f"Population aggregation failed for {pop_tif}") from exc
 
 
 def population_weighted_stats(t: np.ndarray, pop: np.ndarray, label: str) -> dict:
@@ -607,8 +605,7 @@ def process_country(
     if pop_path.exists():
         pop_arr = aggregate_population_to_nodes(pop_path, node_list, lons, lats)
     else:
-        print(f"  [WARN] WorldPop TIF not found for {country} — setting pop=1 per node")
-        pop_arr = np.ones(len(node_list), dtype=float)
+        raise FileNotFoundError(f"WorldPop TIF not found for {country}: {pop_path}")
 
     node_df = pd.DataFrame(
         {
