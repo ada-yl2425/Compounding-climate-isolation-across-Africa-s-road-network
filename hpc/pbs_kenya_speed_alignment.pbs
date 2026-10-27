@@ -1,0 +1,32 @@
+#!/bin/bash -l
+#PBS -l select=1:ncpus=2:mem=8gb
+#PBS -l walltime=01:00:00
+#PBS -N road_ke_align
+
+# Engineering-only audit of source feature IDs against the historical speed
+# table. This job does not recompute or approve climate/IRI model outputs.
+set -euo pipefail
+: "${AUDIT_ROOT:?AUDIT_ROOT is required}"
+: "${ROAD_ARCHIVE:?ROAD_ARCHIVE is required}"
+: "${SPEED_CSV_GZ:?SPEED_CSV_GZ is required}"
+: "${PYTHON_BIN:?PYTHON_BIN is required}"
+cd "$AUDIT_ROOT/code"
+
+module load tools/prod p7zip/17.04-GCCcore-12.3.0 \
+  geopandas/0.14.2-foss-2023a \
+  xarray/2023.9.0-gfbf-2023a \
+  python-igraph/0.11.4-foss-2023a \
+  Arrow/16.1.0-gfbf-2023b
+
+WORK="$AUDIT_ROOT/work/kenya_speed_alignment_${PBS_JOBID%%.*}"
+mkdir -p "$WORK" "$AUDIT_ROOT/results"
+7z x -y "$ROAD_ARCHIVE" "-o$WORK" >/dev/null
+gzip -dc "$SPEED_CSV_GZ" > "$WORK/Kenya_road_speed.csv"
+
+"$PYTHON_BIN" -m hpc.audit_road_speed_alignment \
+  --shapefile "$WORK/Kenya/Kenya.shp" \
+  --speed-csv "$WORK/Kenya_road_speed.csv" \
+  --country Kenya \
+  --output "$AUDIT_ROOT/results/kenya_speed_alignment_qc.json"
+
+echo "KENYA_ROAD_SPEED_ALIGNMENT_PASS job=${PBS_JOBID:-unknown}"
