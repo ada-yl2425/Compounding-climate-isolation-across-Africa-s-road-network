@@ -8,7 +8,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-from hpc.finalize_gadm_admin import audit_outputs, finalize, sha256
+import pytest
+
+from hpc.finalize_gadm_admin import _check_gpkg, audit_outputs, finalize, sha256
 
 
 def _gpkg(path: Path, iso: str, level: int, gid: str, source_rows: int):
@@ -185,6 +187,38 @@ def test_submission_entry_uses_scheduler_afterok():
     source = Path("hpc/submit_gadm_finalize_afterok.sh").read_text(encoding="utf-8")
     assert "depend=afterok:$array_job_id" in source
     assert "qsub -W" in source
+
+
+def test_generic_gpkg_geometry_metadata_requires_actual_polygons(tmp_path):
+    gpd = pytest.importorskip("geopandas")
+    pytest.importorskip("shapely", minversion="2.0")
+    from shapely.geometry import LineString, MultiPolygon, box
+
+    layer = "gadm41_KEN_2"
+    path = tmp_path / "mixed_polygons.gpkg"
+    records = {
+        "admin_gid": ["KEN.1.1_1", "KEN.1.2_1"],
+        "admin_level": [2, 2],
+        "GID_0": ["KEN", "KEN"],
+        "GID_1": ["KEN.1_1", "KEN.1_1"],
+        "GID_2": ["KEN.1.1_1", "KEN.1.2_1"],
+        "source_rows": [1, 1],
+    }
+    geometries = [box(0, 0, 1, 1), MultiPolygon([box(2, 0, 3, 1)])]
+    frame = gpd.GeoDataFrame(records, geometry=geometries, crs="EPSG:4326")
+    frame.to_file(path, layer=layer, driver="GPKG", index=False)
+    with sqlite3.connect(path) as connection:
+        declared = connection.execute(
+            "SELECT geometry_type_name FROM gpkg_geometry_columns"
+        ).fetchone()[0]
+    assert declared == "GEOMETRY"
+    assert _check_gpkg(path, "KEN", 2, 2, 2)["features"] == 2
+
+    bad = tmp_path / "polygon_and_line.gpkg"
+    frame.geometry = [box(0, 0, 1, 1), LineString([(2, 0), (3, 1)])]
+    frame.to_file(bad, layer=layer, driver="GPKG", index=False)
+    with pytest.raises(ValueError, match="non-polygon"):
+        _check_gpkg(bad, "KEN", 2, 2, 2)
 
 
 def test_submission_wrapper_requires_whole_array_id(tmp_path):

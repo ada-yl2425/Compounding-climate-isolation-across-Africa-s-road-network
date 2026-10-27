@@ -86,7 +86,7 @@ def _check_gpkg(
         ).fetchone()
         if (
             geom is None
-            or geom[1] not in {"POLYGON", "MULTIPOLYGON"}
+            or geom[1] not in {"POLYGON", "MULTIPOLYGON", "GEOMETRY"}
             or geom[2] != 4326
         ):
             raise ValueError(f"invalid GPKG geometry metadata: {geom}")
@@ -117,6 +117,21 @@ def _check_gpkg(
             )
         if source_rows_sum != expected_rows:
             raise ValueError(f"source_rows sum {source_rows_sum} != {expected_rows}")
+        if geom[1] == "GEOMETRY":
+            # GeoPandas/Fiona declares a layer GEOMETRY when valid polygon and
+            # multipolygon units coexist. A generic declaration is acceptable
+            # only after checking every actual feature, not by metadata alone.
+            import geopandas as gpd
+
+            geometries = gpd.read_file(path, layer=layer).geometry
+            if (
+                len(geometries) != expected_count
+                or geometries.isna().any()
+                or geometries.is_empty.any()
+                or not geometries.geom_type.isin({"Polygon", "MultiPolygon"}).all()
+                or not geometries.is_valid.all()
+            ):
+                raise ValueError("GEOMETRY layer contains non-polygon/invalid features")
         return {
             "layer": layer,
             "features": n,
