@@ -25,6 +25,8 @@ cx3 工程证据：Kenya RAR schema 作业 `4479850.pbs-7`，`Exit_status=0`；�
 
 四路段 ID/几何抽样对齐报告：同目录 `results/kenya_road_alignment_samples.json`，SHA-256 `2eadeee70a1e188d2d150337f917d30a8fb10ea4c993b38115ffcc1678707401`。对照旧 iCloud `02_derived_checkpoints/legacy_reference/road_speed_cordex.zip` 内 `road_speed_cordex/Kenya_road_speed.csv` 的四行；此为历史数据血缘核查，不是新科学速度结果。
 
+后续全量核查：Kenya 官方道路源→旧速度表 **401,965/401,965** 行的 ID/几何匹配已由 cx3 `4484004.pbs-7` 验证；与此同时，投稿旧图的 0.1 km 筛选后重编号会导致同一源顺序下的 358,791 条候选图边仅 1 条预计接到自身速度，305,759 条误接、53,031 条默认。方法、输入哈希、独立计数和 iCloud QC 地址见 [KENYA_ROAD_SPEED_ALIGNMENT_2026-10-27.md](KENYA_ROAD_SPEED_ALIGNMENT_2026-10-27.md)。这使“道路原表与旧速度表对齐”与“旧网络图速度 join 正确”成为截然不同的结论；后者在代码实现上不成立，必须修正后再算网络下游，但不能凭此直接给出旧论文结果误差大小。
+
 cx3 输入无关的微型 fixture（`tests/test_recalc_invariants.py`，完整 Python 3.11/地理环境）在临时部署时得到 `3 passed, 3 xfailed`。使用 `--runxfail` 复核三个失败**确实到达目标断言**：2021 年 2/3 月恒定通量都换算为 30 天的 2,592,000，而期望分别为 2,419,200/2,678,400；平行路 A/B 正常时间 1/2、极端时间 10/2，旧图给 10 而物理多边最优为 2；缺 WorldPop 时返回 `[1,1]`。这些 xfail 是待修复缺陷证据，**不计为科学模型测试通过**。本机因缺 `geopandas` 只能运行其余部分，远端额外补装 `tqdm` 才能导入速度模块。
 
 后续工程修正：基准与未来降水载入器现按 NetCDF `time_bnds` 精确时段秒数积分；没有边界时按 CF 日历月长；IRI `HDM4_DT=1/12` 未变。cx3 旧版 xarray 不支持最初使用的 `.dt.total_seconds()`，已改为时段差除以 `np.timedelta64(1, "s")`；临时部署复测为 `12 passed, 4 skipped, 2 xfailed`。跳过和预期失败分别包括未修复的图／人口口径，不能据此放行 G0。新独立 `recalc/physical_edges.py` 及 7 项微测保留原始路段 ID、平行边和情景独立最优边，但**尚未接入旧五条正式管线**，也没有替用户确定通行率重复计入是否代表两个独立过程。

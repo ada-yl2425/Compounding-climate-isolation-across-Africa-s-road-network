@@ -160,6 +160,10 @@
 
 边界专项最新归档（覆盖上段“iCloud 副本待校验”的旧状态）：经临时 Google Drive 单包中转，整包本地 SHA-256 与远端 `3f80b2e38914244e5c677a5fa0a2b129420d6727bad6f1f1aee9507d7b2ae76e` 一致。已解包到 iCloud Drive 本机目录 `africa pavement/02_derived_checkpoints/boundaries/gadm41_admin_49country_f0a701b_gha961ead5_20261027/`；按终验 manifest 对 49 个 GPKG 和 49 个 QC JSON 逐文件复核，98/98 哈希匹配，manifest 与 summary 哈希也一致。macOS iCloud 状态显示同步空闲、已追平，且目标目录没有待上传项目；**本机 iCloud 目录副本验证 PASS，云端逐文件哈希没有独立复读**。已清理失败的 `.partial`、本地下载临时包和 Google Drive 中转包。这只放行 GADM 边界预处理输入，不放行人口分母、医疗分析或任何 C00–C16 审稿科学重算。
 
+C00 单国推进：Kenya 原始 504,366 条道路按旧规则筛出 401,965 条；旧 CORDEX 速度 CSV 的 401,965 条 ID、长度、中心点和表面全量匹配，无重复、遗漏或额外 ID。cx3 作业 `4484004.pbs-7` 退出码 0，QC SHA-256 `41a7a9e85f8925098d800f7d99103f9558cea4651892307ea9825d2dd772210f`，方法、输入哈希和 iCloud 结果地址见 [KENYA_ROAD_SPEED_ALIGNMENT_2026-10-27.md](KENYA_ROAD_SPEED_ALIGNMENT_2026-10-27.md)。**这是旧表血缘的 Kenya 单国 PASS，C00 仍 `[ ]`**：其余国家、过滤后图边重编号、坡度/曲率与速度物理口径均未放行。
+
+C00 图边诊断：对旧 `network_pipeline.py` 的“0.1 km 筛选后重编号”与已验 Kenya 速度表做独立计数，358,791 条候选图边中仅 1 条预计接到自身速度；305,759 条误接别的源道路速度，53,031 条预计走默认速度。见 [KENYA_ROAD_SPEED_ALIGNMENT_2026-10-27.md](KENYA_ROAD_SPEED_ALIGNMENT_2026-10-27.md) 和 iCloud `05_manifests/kenya_graph_reindex_diagnostic_491c30f_20261027/legacy_graph_reindex_diagnostic.json`。这是在旧图使用相同源文件/行序前提下的**代码逻辑推断**，不是已读取旧图并测得的 OD 误差。已将五条旧图构建路径改为源文件读取后即赋 ID，本机 `57 passed, 3 skipped`，cx3 三道路真实 Shapefile→图微测 `1 passed`；尚未做全 Kenya 纠正图端到端试跑，不能勾选 C00/C03。即使 C01 最终只改论文文字，**这一独立图 join 缺陷也要求受影响的网络和下游结果重算**。
+
 ## 本地与远程的分工、传输方案
 
 本地做 C00 样本核查、C01 口径与单测、C07/C11/C16 小表聚合及最终 QA；远程做 C02 的国×情景路段计算、C03/04 网络最短路、C05/06/08/09 医疗与栅格、C10/12/13/14 大图和重复模拟。远程资源不是已配置就绪；需先确认可用集群、CPU/内存/磁盘配额和可访问的对象存储。泛非图建议单个高内存任务，国别和随机重复用数组任务；避免同机同时启动 50 个大图进程。
