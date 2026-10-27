@@ -4,7 +4,10 @@
   "language": "zh-CN",
   "current_stage": "revise",
   "overall_status": "in_progress",
-  "notes": [],
+  "notes": [
+    "2026-10-27: iCloud CORDEX archive curated to 30 monthly NetCDF inputs; file metadata validated, but source identity and 10-year versus 11-year code window remain open.",
+    "2026-10-27: reviewer recalculation input-gap audit refreshed; no scientific model rerun has started."
+  ],
   "stages": {
     "research": {
       "status": "not_started",
@@ -60,7 +63,10 @@
   "materials": {
     "manuscript": "Climate_change_fragments_Africa_s_road_network_v4_adj(1).docx",
     "data_migration_manifest": "audit/ICLOUD_MIGRATION_2026-10-27.md",
-    "frst_source_verification": "audit/FRST_FIGSHARE_VERIFICATION.csv"
+    "frst_source_verification": "audit/FRST_FIGSHARE_VERIFICATION.csv",
+    "cordex_selection": "audit/CORDEX_SELECTION_2026-10-27.md",
+    "cordex_hashes": "audit/CORDEX_SHA256_2026-10-27.csv",
+    "recalculation_input_gaps": "audit/RECALCULATION_INPUT_GAPS_2026-10-27.md"
   },
   "integrity": {
     "pre_review": null,

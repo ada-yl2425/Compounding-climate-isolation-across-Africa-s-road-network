@@ -29,3 +29,14 @@
 - 原始 CORDEX `pr/mrso`、医疗设施 CSV、Natural Earth 原始城市点：当前 USB/可见 Google Drive 未找到，不得以派生表替代。
 
 下一次放行必须核查 source ID、哈希、变量/坐标/时窗、道路 ID 与论文结果链；正式重算另建 run_id 和结果目录。详见 `PROVENANCE_GATE_2026-10-27.md` 与本仓库 `audit/RECALCULATION_CHECKLIST.md`。
+
+## 当日后续清理：Downloads/Road_data
+
+- 用户明确确认 `Downloads/Road_data` 内下载文件是正确版本，并要求停止剩余逐文件核对、清理已迁移下载副本。清理前目录包含 50 个国家子目录、250 个 Shapefile 组成文件；此前已抽查及逐字节比对多国文件（含 Kenya、Congo/CongoRep、CentralAfrican、Morocco、Mozambique、Namibia、Niger、Nigeria、SouthAfrica 等），均与 iCloud 官方 RAR 中相应文件一致。**没有完成 250/250 的逐字节比对**，不能把用户确认写成独立技术验证。
+- iCloud 官方 FRST 目录保留 50 个 `.rar`，与上述 Figshare 官方记录的文件名、大小、MD5 一致；清理前 `brctl status` 未显示待上传项目。此状态支持已同步，但不能取代从另一台设备检查云端的独立验证。
+- 已删除本机 `/Users/tuibubansurfacepro/Downloads/Road_data`；本机可用空间约从 10 GiB 增至 24 GiB。该本地解压副本没有移到废纸篓，若需恢复可从 iCloud RAR 重新解压。
+- iCloud 的 `africa pavement/` 中没有第二套 `Road_data`/解压 Shapefile，也未发现重复的道路 RAR。因此没有删除 iCloud 道路文件；保留官方原包，避免误删唯一来源。
+
+## 当日后续整理：CORDEX 气象输入
+
+用户新置入的 `气象数据raw.zip` 已筛出 30 个 `pr/mrso` 月度 NetCDF，放在 `01_sources/climate/CORDEX_AFR44_SMHI-RCA4_v1/`。其中 16 个对应稿件主分析和 SI S8，14 个是现有代码 ±5 年窗口的边界核查所需；变量、单位和时间轴已逐文件检查。完整来源、筛选规则、校验和与口径限制见 `CORDEX_SELECTION_2026-10-27.md`、`CORDEX_SHA256_2026-10-27.csv`。本节取代上文“当前缺原始 CORDEX”的旧时点判断；原 ZIP 在筛选文件上传确认前仍保留，不能把本机已提取等同云端已完成同步。
