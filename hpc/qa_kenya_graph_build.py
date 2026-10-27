@@ -13,6 +13,7 @@ import time
 from pathlib import Path
 
 import pandas as pd
+import networkx as nx
 
 from result1.network_pipeline import build_graphs_from_shp
 
@@ -100,6 +101,7 @@ def main():
     parser.add_argument("--speed", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--source-rar", type=Path)
+    parser.add_argument("--code-commit", required=True)
     args = parser.parse_args()
     started = time.monotonic()
     speed = pd.read_csv(args.speed, usecols=["road_id"])
@@ -112,6 +114,9 @@ def main():
     result.update({
         "kind": "engineering_graph_build_qa_only",
         "country": "Kenya",
+        "code_commit": args.code_commit,
+        "networkx_version": nx.__version__,
+        "pandas_version": pd.__version__,
         "source_rar_sha256": sha256_file(args.source_rar) if args.source_rar else None,
         "speed_csv_sha256": sha256_file(args.speed),
         "speed_rows": int(len(speed)),

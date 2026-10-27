@@ -1,7 +1,10 @@
 """Pure unit tests for graph/table consistency diagnostics."""
 
+import csv
+
 import networkx as nx
 import pandas as pd
+import pytest
 
 from hpc.qa_kenya_graph_build import audit_graph, parse_build_counts
 
@@ -38,3 +41,38 @@ def test_audit_accepts_matching_edge_table():
     table = pd.DataFrame([{"u": 1, "v": 2, "road_id": "first", "w0": 3.0, "w1": 5.0}])
     result = audit_graph(normal, extreme, connectivity, table, {"first"})
     assert result["edge_table_matches_route_graph"]
+
+
+def test_real_builder_reports_stale_table_after_parallel_edge_update(tmp_path):
+    geopandas = pytest.importorskip("geopandas")
+    from shapely.geometry import LineString
+
+    from result1.network_pipeline import build_graphs_from_shp
+
+    roads = geopandas.GeoDataFrame(
+        {"Surface": ["unpaved", "unpaved"]},
+        geometry=[
+            LineString([(10, 0), (10.02, 0)]),
+            LineString([(10, 0), (10.01, 0.001), (10.02, 0)]),
+        ],
+        crs="EPSG:4326",
+    )
+    shp = tmp_path / "Kenya.shp"
+    roads.to_file(shp)
+    speed = tmp_path / "Kenya_road_speed.csv"
+    with speed.open("w", newline="") as output:
+        writer = csv.DictWriter(output, fieldnames=(
+            "road_id", "V_normal", "V_extreme", "passable_rate_extreme"
+        ))
+        writer.writeheader()
+        writer.writerow({"road_id": "Kenya_road_0", "V_normal": 10,
+                         "V_extreme": 5, "passable_rate_extreme": 1})
+        writer.writerow({"road_id": "Kenya_road_1", "V_normal": 100,
+                         "V_extreme": 50, "passable_rate_extreme": 1})
+    normal, extreme, connectivity, table, _ = build_graphs_from_shp(shp, speed)
+    result = audit_graph(normal, extreme, connectivity, table,
+                         {"Kenya_road_0", "Kenya_road_1"})
+    assert result["route_edges"] == 1
+    assert result["normal_graph_table_road_id_mismatch"] == 1
+    assert result["normal_graph_table_weight_mismatch"] == 1
+    assert result["extreme_graph_table_weight_mismatch"] == 1
