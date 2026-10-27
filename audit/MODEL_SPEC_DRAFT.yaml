@@ -19,9 +19,9 @@ iri_progression:
 
 climate:
   baseline_window: 2011-01_to_2020-12
-  precipitation_flux_to_month_total: ACTUAL_CF_BOUNDS_OR_CALENDAR_DAYS_LOCAL_TEST_PASS_REMOTE_TEST_PENDING
+  precipitation_flux_to_month_total: ACTUAL_CF_BOUNDS_OR_CALENDAR_DAYS_LOCAL_AND_REMOTE_TEST_PASS
   monthly_iteration_input: LEGACY_REPRESENTATIVE_MONTH_REPEATED_12_TIMES_PAPER_WORDING_TO_RECONCILE
-  future_windows: PAPER_10_YEAR_CODE_CHANGED_LOCAL_TEST_PASS_REMOTE_TEST_PENDING_OLD_RUN_UNKNOWN
+  future_windows: PAPER_10_YEAR_CODE_CHANGED_LOCAL_AND_REMOTE_TEST_PASS_OLD_RUN_UNKNOWN
 
 road_geometry:
   physical_edge_id_crosswalk: RAW_SOURCE_ROW_VS_POST_FILTER_RENUMBER_MISMATCH_CONFIRMED_FIX_PENDING
@@ -37,7 +37,7 @@ population_and_boundaries:
   worldpop_missing_input_policy: FAIL_CLOSED_LOCAL_AND_REMOTE_TEST_PASS
   official_country_result_count: 49
   africa_city_od_node_count: 83
-  gadm_admin_level: L2_WHERE_AVAILABLE_ELSE_L1_PILOT_IN_PROGRESS
+  gadm_admin_level: L2_47_COUNTRIES_L1_LSO_LBY_REGISTRY_PASS_ARRAY_AND_FINALIZER_PENDING
 
 release_requirements:
   - model_units_and_source_documented
