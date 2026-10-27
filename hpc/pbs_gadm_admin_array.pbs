@@ -1,0 +1,82 @@
+#!/bin/bash -l
+#PBS -l select=1:ncpus=2:mem=16gb
+#PBS -l walltime=02:00:00
+#PBS -J 1-49
+#PBS -N gadm_admin49
+
+# Do not submit until the global-source registry manifest is PASS and G0 has
+# authorized this boundary preprocessing. One array item handles one country.
+set -euo pipefail
+module load tools/prod geopandas/0.14.2-foss-2023a Arrow/16.1.0-gfbf-2023b
+: "${GADM_CODE_ROOT:?absolute code checkout is required}"
+: "${GADM_SOURCE:?absolute extracted gadm_410.gpkg is required}"
+: "${GADM_REGISTRY:?PASS 49-country registry CSV is required}"
+: "${GADM_MANIFEST:?registry manifest JSON is required}"
+: "${GADM_OUTPUT_ROOT:?new run-specific output directory is required}"
+: "${GADM_PYTHON:?Python with GeoPandas/Shapely is required}"
+: "${PBS_ARRAY_INDEX:?PBS array index is required}"
+
+cd "$GADM_CODE_ROOT"
+test -f "$GADM_SOURCE"
+test -f "$GADM_REGISTRY"
+test -f "$GADM_MANIFEST"
+if test "$PBS_ARRAY_INDEX" -lt 1 || test "$PBS_ARRAY_INDEX" -gt 49; then
+  echo "array index outside 1..49: $PBS_ARRAY_INDEX" >&2
+  exit 2
+fi
+
+# Verify the small registry on every item. The 2.7 GB source is hashed once by
+# build_gadm_country_registry.py, not redundantly by all 49 jobs.
+"$GADM_PYTHON" -c '
+import hashlib, json, pathlib, sys
+registry, manifest = map(pathlib.Path, sys.argv[1:3])
+meta = json.loads(manifest.read_text(encoding="utf-8"))
+digest = hashlib.sha256(registry.read_bytes()).hexdigest()
+if meta.get("status") != "PASS" or meta.get("formal_country_count") != 49:
+    raise SystemExit("registry manifest is not PASS/49")
+if digest != meta.get("registry_sha256"):
+    raise SystemExit("registry SHA-256 mismatch")
+if pathlib.Path(meta["source_file"]).resolve() != pathlib.Path(sys.argv[3]).resolve():
+    raise SystemExit("source GPKG path differs from registry manifest")
+if pathlib.Path(sys.argv[3]).stat().st_size != meta.get("source_bytes"):
+    raise SystemExit("source GPKG size differs from registry manifest")
+if len(meta.get("source_sha256", "")) != 64:
+    raise SystemExit("source SHA-256 missing from registry manifest")
+code_map = pathlib.Path(sys.argv[4]) / "data_procession/prepare_city_layer.py"
+if hashlib.sha256(code_map.read_bytes()).hexdigest() != meta.get("code_mapping_sha256"):
+    raise SystemExit("FOLDER_TO_ISO code mapping changed after registry preflight")
+' "$GADM_REGISTRY" "$GADM_MANIFEST" "$GADM_SOURCE" "$GADM_CODE_ROOT"
+
+line="$(sed -n "$((PBS_ARRAY_INDEX + 1))p" "$GADM_REGISTRY")"
+IFS=, read -r idx country_folder iso3 admin_level source_rows target_count gid1_count gid2_count empty_gid2 status <<< "$line"
+if test "$idx" != "$PBS_ARRAY_INDEX" || test "$status" != "READY"; then
+  echo "registry row missing or not READY for index $PBS_ARRAY_INDEX" >&2
+  exit 2
+fi
+if ! [[ "$iso3" =~ ^[A-Z]{3}$ && "$admin_level" =~ ^[12]$ ]]; then
+  echo "invalid ISO/level in registry row $PBS_ARRAY_INDEX" >&2
+  exit 2
+fi
+
+outdir="$GADM_OUTPUT_ROOT/$iso3"
+mkdir -p "$outdir"
+output="$outdir/gadm41_${iso3}_${admin_level}.gpkg"
+report="$outdir/gadm41_${iso3}_${admin_level}_qc.json"
+"$GADM_PYTHON" -m hpc.extract_gadm_admin \
+  --input "$GADM_SOURCE" --country "$iso3" \
+  --output "$output" --report "$report"
+
+"$GADM_PYTHON" -c '
+import json, sys
+qc = json.load(open(sys.argv[1], encoding="utf-8"))
+expected_iso, expected_level, expected_rows, expected_targets = sys.argv[2:]
+if not (
+    qc.get("status") == "PASS"
+    and qc.get("country") == expected_iso
+    and qc.get("admin_level") == int(expected_level)
+    and qc.get("source_rows") == int(expected_rows)
+    and qc.get("target_unique_admin_gid") == int(expected_targets)
+):
+    raise SystemExit("country output QC disagrees with preflight registry")
+' "$report" "$iso3" "$admin_level" "$source_rows" "$target_count"
+echo "GADM_ADMIN_PASS index=$PBS_ARRAY_INDEX iso3=$iso3 level=$admin_level rows=$source_rows target=$target_count"
