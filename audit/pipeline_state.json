@@ -1,0 +1,68 @@
+{
+  "workflow_id": "africa-road-reviewer-recalculation-2026",
+  "mode": "mid-entry",
+  "language": "zh-CN",
+  "current_stage": "revise",
+  "overall_status": "in_progress",
+  "notes": [],
+  "stages": {
+    "research": {
+      "status": "not_started",
+      "outputs": [],
+      "updated_by": null
+    },
+    "write": {
+      "status": "not_started",
+      "outputs": [],
+      "updated_by": null
+    },
+    "integrity_pre_review": {
+      "status": "not_started",
+      "outputs": [],
+      "updated_by": null
+    },
+    "review": {
+      "status": "not_started",
+      "outputs": [],
+      "updated_by": null
+    },
+    "revise": {
+      "status": "in_progress",
+      "outputs": [],
+      "updated_by": null
+    },
+    "re_review": {
+      "status": "not_started",
+      "outputs": [],
+      "updated_by": null
+    },
+    "re_revise": {
+      "status": "not_started",
+      "outputs": [],
+      "updated_by": null
+    },
+    "integrity_final": {
+      "status": "not_started",
+      "outputs": [],
+      "updated_by": null
+    },
+    "finalize": {
+      "status": "not_started",
+      "outputs": [],
+      "updated_by": null
+    },
+    "summary": {
+      "status": "not_started",
+      "outputs": [],
+      "updated_by": null
+    }
+  },
+  "materials": {
+    "manuscript": "Climate_change_fragments_Africa_s_road_network_v4_adj(1).docx"
+  },
+  "integrity": {
+    "pre_review": null,
+    "final": null
+  },
+  "revision_cycles": []
+}
