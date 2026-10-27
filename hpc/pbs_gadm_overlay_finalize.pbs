@@ -1,0 +1,37 @@
+#!/bin/bash -l
+#PBS -l select=1:ncpus=1:mem=4gb
+#PBS -l walltime=01:00:00
+#PBS -N gadm49_overlay_qc
+
+# Submit with afterany on the original array and afterok on the Ghana repair.
+# The composer checks all 49 country outputs before the finalizer validates
+# source, GPKG schemas and geometry QC. No original outputs are overwritten.
+set -euo pipefail
+module load tools/prod geopandas/0.14.2-foss-2023a Arrow/16.1.0-gfbf-2023b
+: "${GADM_CODE_ROOT:?}"
+: "${GADM_SOURCE:?}"
+: "${GADM_REGISTRY:?}"
+: "${GADM_MANIFEST:?}"
+: "${GADM_ORIGINAL_ROOT:?}"
+: "${GADM_REPAIR_ROOT:?}"
+: "${GADM_COMPOSED_ROOT:?}"
+: "${GADM_FINAL_MANIFEST:?}"
+: "${GADM_FINAL_CSV:?}"
+: "${GADM_PYTHON:?}"
+
+cd "$GADM_CODE_ROOT"
+"$GADM_PYTHON" -m hpc.compose_gadm_repair \
+  --registry "$GADM_REGISTRY" \
+  --original-root "$GADM_ORIGINAL_ROOT" \
+  --repair-root "$GADM_REPAIR_ROOT" \
+  --composed-root "$GADM_COMPOSED_ROOT" \
+  --original-commit f0a701b \
+  --repair-commit 961ead5
+"$GADM_PYTHON" -m hpc.finalize_gadm_admin \
+  --registry "$GADM_REGISTRY" \
+  --registry-manifest "$GADM_MANIFEST" \
+  --source "$GADM_SOURCE" \
+  --output-root "$GADM_COMPOSED_ROOT" \
+  --manifest "$GADM_FINAL_MANIFEST" \
+  --summary "$GADM_FINAL_CSV"
+echo "GADM49_OVERLAY_FINAL_PASS manifest=$GADM_FINAL_MANIFEST summary=$GADM_FINAL_CSV"
