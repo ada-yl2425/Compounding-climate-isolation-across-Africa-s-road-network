@@ -83,7 +83,16 @@ def aggregate_country(
     rows["GID_1"] = gid1
     rows["GID_2"] = gid2
     rows["admin_gid"] = rows[key]
-    if not rows["admin_gid"].str.startswith(country + ".").all():
+    # GADM 4.1 Ghana is a documented-in-source exception to the dot separator:
+    # all 260 source L2 GIDs use GHA1.1_2-style IDs, while GID_0 remains GHA.
+    # Keep the exception narrow so a foreign-country GID is still rejected.
+    if country == "GHA":
+        gid_matches = rows["admin_gid"].str.fullmatch(
+            r"GHA[0-9]+(?:[.][0-9]+)*_[0-9]+"
+        )
+    else:
+        gid_matches = rows["admin_gid"].str.startswith(country + ".")
+    if not gid_matches.all():
         raise ValueError(f"{country}: administrative GIDs do not match country prefix")
 
     # All original attributes carried to a dissolved unit must agree.  This

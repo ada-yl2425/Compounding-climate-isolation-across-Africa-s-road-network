@@ -47,6 +47,21 @@ def test_all_missing_l2_falls_back_to_l1():
     assert output.iloc[0]["admin_gid"] == "KEN.1_1"
 
 
+def test_gadm41_ghana_non_dot_gid_is_accepted_but_foreign_gid_is_not():
+    source = _source(gid2=("GHA1.1_2", "GHA1.1_2", "GHA1.2_2"))
+    source["GID_0"] = "GHA"
+    source["GID_1"] = "GHA1_2"
+    output, qc = aggregate_country(source, "GHA")
+    assert qc["status"] == "PASS"
+    assert qc["source_rows"] == 3
+    assert qc["target_unique_admin_gid"] == 2
+    assert set(output["admin_gid"]) == {"GHA1.1_2", "GHA1.2_2"}
+
+    source.loc[2, "GID_2"] = "UGA1.2_2"
+    with pytest.raises(ValueError, match="country prefix"):
+        aggregate_country(source, "GHA")
+
+
 def test_mixed_l2_does_not_silently_drop_area():
     with pytest.raises(ValueError, match="mixed empty/nonempty GID_2"):
         aggregate_country(_source(("KEN.1.1_1", "", "KEN.1.2_1")), "KEN")

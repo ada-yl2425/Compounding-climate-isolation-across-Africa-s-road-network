@@ -1,0 +1,33 @@
+#!/bin/bash -l
+#PBS -l select=1:ncpus=2:mem=16gb
+#PBS -l walltime=02:00:00
+#PBS -N gadm_gha_repair
+
+# GADM 4.1 Ghana has GHA1.1_2-style GIDs. This is an isolated rerun, never
+# an overwrite of the immutable 49-country array's original output root.
+set -euo pipefail
+module load tools/prod geopandas/0.14.2-foss-2023a Arrow/16.1.0-gfbf-2023b
+: "${GADM_CODE_ROOT:?}"
+: "${GADM_SOURCE:?}"
+: "${GADM_REPAIR_ROOT:?}"
+: "${GADM_PYTHON:?}"
+
+cd "$GADM_CODE_ROOT"
+test -f "$GADM_SOURCE"
+out="$GADM_REPAIR_ROOT/GHA/gadm41_GHA_2.gpkg"
+report="$GADM_REPAIR_ROOT/GHA/gadm41_GHA_2_qc.json"
+test ! -e "$out"
+test ! -e "$report"
+"$GADM_PYTHON" -m hpc.extract_gadm_admin \
+  --input "$GADM_SOURCE" --country GHA \
+  --output "$out" --report "$report"
+"$GADM_PYTHON" -c '
+import json, sys
+qc = json.load(open(sys.argv[1], encoding="utf-8"))
+assert qc["status"] == "PASS"
+assert qc["country"] == "GHA"
+assert qc["admin_level"] == 2
+assert qc["source_rows"] == 260
+assert qc["target_unique_admin_gid"] == 260
+' "$report"
+echo "GADM_GHA_REPAIR_PASS output=$out report=$report"
