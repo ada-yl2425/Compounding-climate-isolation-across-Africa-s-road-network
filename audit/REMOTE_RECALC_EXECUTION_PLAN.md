@@ -1,0 +1,38 @@
+# Reviewer 重算：依赖、并行与 cx3 放行计划
+
+状态：2026-10-27。此文件是执行计划，**不是已完成的科学重算**。正式国别结果为 49 国、非洲城市 OD 输入为 83 节点；WestSahara 无正式结果。是否允许其道路作为跨境过境边仍须在 G0 冻结。审稿条目以 [REVIEWER_RECALCULATION_CHECKLIST.md](REVIEWER_RECALCULATION_CHECKLIST.md) 01–11 为准；技术步骤以 [RECALCULATION_CHECKLIST.md](RECALCULATION_CHECKLIST.md) C00–C16 为准。
+
+## 依赖图与可并行作业
+
+| 阶段 | 必须先生成/决定的产物 | 可并行工作 | 卡点 |
+|---|---|---|---|
+| G0 规格冻结 | `model_spec.yaml`：MGD/IRI/月长/时窗/通行率；`analysis_population_registry.csv`：49 国、83 城、OD、ESH 道路规则；输入身份、哈希、指标词典 | 道路 ID 审计；气候/HDM 审计；地形来源审计；WorldPop/GADM/设施血缘审计；旧 TGR/恢复率数字追源 | 不明确物理定义、版本和分析样本时，**不得**投批量作业 |
+| G1 共享前处理 | `canonical_roads`（稳定物理路段 ID、长度、几何及图边 crosswalk）；由道路几何重建曲率、验证坡度单位并抽样；`road_cell_index`（道路→CORDEX 格点）；83 城 OD/权重注册表；人口像素与设施 snap 注册表、排除原因；一致的图边权重规范 | 地形/格点/城市/人口-设施锚定可分工并行，但必须汇合到同一 ID、CRS 与版本 | 源→路段→图边一对一/多对一关系可追溯；质量与样本守恒通过 |
+| G2 路段气候与速度 | G0/G1 的模型及道路-格点映射 | 若发现实现错误：基准及未来可按国×模型×时段并行；人口/设施空间预分配可同时完成 | 单路段手算、月份/日历、IRI 边界、速度/通行率单位测试通过；一国一情景试跑通过 |
+| G3 统一图与基础旅行时间 | 放行的路段速度（或有证据证明可沿用旧版）、统一图权重/ID | 国别图可按国并行；泛非图单独高内存作业；冻结图后，城市 OD 固定路/重选路、医疗、NI/CV 可作为三个工作流并行 | 图边数量、长度、速度匹配、平行边、连通、OD 掩码与正常/极端单调不变量通过 |
+| G4 审稿专项 | G3 及各自专项前置 | 城市路线分解独立；医疗排除/覆盖与多源最短路独立；NI/CV 排序独立。TGR 等医疗节点表；0.1%/1% km 等入选边清单；随机试验等图+排序；未来排名等未来速度+基准 NI | 每专项逐国/逐情景清单、分母、公式、失败/断连数、输出哈希验收 |
+| G5 条件分析及全文对账 | G4 汇总、保留的论断列表 | 敏感性按模型/样本独立；医疗干预仅在保留政策主张时做；全稿数字核对本地执行 | 新旧结果不混用；11 项 checklist 分别附证据并填最终验证结果 |
+
+现有 `tests/test_basic.py` 只是占位测试，不构成 G1–G4 放行。需要覆盖：筛选前后道路 ID 与 0.05/0.1 km 阈值、坡度/曲率单位、CORDEX 真实月份长度与 10 年/11 年窗、IRI 12 上下限、通行率不得双重惩罚、平行边物理 ID、`t_reroute <= t_fixed`（同 OD 且有限值时）、人口分母守恒和 `pop=1` 回退禁用、49/83 样本、入选边长度、固定随机种子及图权重恢复。先使用人工可手算的微型 fixture，再做一个国家及极小泛非 OD 的端到端 pilot，估算峰值内存/运行时间；通过才申请完整数组任务。
+
+## Git 分支与结果隔离
+
+- 集成基底：`recalc/00-foundation`。保留既有审计文件，完成 G0/G1 的规格、映射、测试和远程 preflight；不得覆盖旧结果。
+- G0/G1 合并并通过后，按工作流从该提交派生：`recalc/10-climate-speed`、`recalc/20-network-route`、`recalc/30-health-equity`、`recalc/40-bottleneck-paving`、`recalc/50-future-sensitivity`、`recalc/90-claim-audit`。有依赖的分支只能在其上游合并后启动正式结果；可先并行写无依赖代码/测试。不要用多分支同时写同一个共享文件。
+- 数据、运行日志和大结果不进 Git。每次运行使用不可复用的 `run_id`，保存 Git commit、输入 SHA-256、环境、配置、任务 ID、输出清单；旧包只读。远程和 iCloud `04_validated_results/<run_id>/` 中的 `PASS` 产物方可供下游使用。
+
+## cx3 运行与传输
+
+参照 `africa-energy/validation/hpc/result1/` 与 `result2/`：cx3 使用 PBS Pro `qsub -J` 数组和 `afterok` 汇总，不是 Slurm。先由用户在交互终端输入 `ssh cx3` 及密码。远程环境预检只读确认登录主机、`qsub`、Python/容器、RDS/scratch 可用容量、配额与软件许可；尚未确认前不假定路径、核数或内存。
+
+首批只传本阶段必需的**少数批次**：50 个官方道路 RAR（ESH 过境规则待定）、30 个 CORDEX NC、必要的 WorldPop TIFF、Africa L2 GPKG、3 个地形 TIFF、医疗重建 CSV、历史城市节点 ZIP及 manifest；不复制整个 iCloud，不上传旧结果包或重复气候 ZIP。道路 RAR、NC、压缩 TIFF 已是压缩容器，避免在本机产生第二份 2 GB 包（本机剩余空间很少）。可用批量 `rsync -a --partial`/`tar` 流，远端逐文件 SHA-256 验证；本机 openrsync 不支持 `--append-verify`，不可照搬。远端高速盘解包和计算，worker 写分片 Parquet；finalizer 核分片数量、schema、CRS、行数、国家/情景范围、缺失和物理不变量，然后仅打包必要结果及摘要回传。Google Drive 若使用 rclone，须设置本项目独立路径并用 `copy`/`check`，不能写入 `africa_energy` 数据区。
+
+## 每个卡点必须留下的证据
+
+1. `input_manifest.json`：源路径、SHA-256、大小、格式、schema/CRS/单位、国家/情景/时间范围、许可与数据血缘。
+2. `run_manifest.json`：`run_id`、Git commit、环境、`model_spec.yaml`、随机种子、PBS job ID、输入 manifest 哈希和预计输出分片。
+3. `qc.json`：单元测试、单国 pilot 与正式作业逐项 PASS/FAIL；失败清单、NaN/断连/排除数和阈值、手工 spot-check 证据。
+4. `output_manifest.json`：每个 Parquet/GeoParquet/CSV 的路径、SHA-256、schema、行数、样本量、公式版本及上游 run ID。需要 GIS 互操作才另导出 GPKG。
+5. `REVIEWER_RECALCULATION_CHECKLIST.md`：只有在上述证据和科学数值核对完成后才填“验证结果”和最终数据地址；文件存在本身不代表结果通过。
+
+**当前状态**：只完成静态输入/代码审计和此运行计划；G0 方法决策、G1 共享中间层、科学单元测试及远程 preflight/批量作业均未放行。

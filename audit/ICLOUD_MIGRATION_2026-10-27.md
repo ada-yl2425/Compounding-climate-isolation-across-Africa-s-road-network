@@ -1,5 +1,14 @@
 # Africa pavement iCloud 迁移记录（2026-10-27）
 
+## 当日新增：WorldPop、GADM 与旧设施点候选恢复
+
+**后续核对与归档更新**：原医疗 CSV 修复失败，用户决定长期采用 GPKG 提取。已将原 `02_derived_checkpoints/recovered_health_facilities_candidate/` **移动而非复制**至 iCloud `01_sources/health_facilities/legacy_gpkg_reconstruction_v1/`；其中单份 CSV 哈希不变，并新增 README/manifest。CSV 与 GPKG 指定六字段重导出逐字节一致，87,118 POINT 的几何/经纬度逐一相等、50/50 国旧设施数相符；原 OSM ID/抓取日期无法恢复。用户确认 WestSahara 数据缺失，正式分析排除此地区，50 国重建表仅为完整旧档；详见 [DATA_VALIDATION_2026-10-27.md](DATA_VALIDATION_2026-10-27.md)。下文旧候选路径仅记载迁移历史，已非当前文件位置。
+
+- 从重新挂载的 U 盘 `WorldPop/` 复制 53 个 `*_ppp_2020_UNadj_constrained.tif` 到 iCloud `01_sources/population/WorldPop_2020_UNadj_constrained_candidate/`。53 个源/目标逐文件 SHA-256 均一致；总源字节数 714,791,286。53 国覆盖研究 50 个道路地区中的 49 个，**缺 WestSahara/ESH**；多 COM/CPV/MUS/STP 四个小文件。栅格头部与论文要求的 2020 constrained UN-adjusted、约 100 m 产品形式吻合，但发布版本、下载记录与逐国人口总量尚未核对，故目录仍标 `candidate`。
+- 复制 `GADM边界.zip`（1,466,771,821 字节；SHA-256 `4eb416375d9352654bb55f205cc710db3f0568503011724971be7eb6b4cc861c`）到 `01_sources/boundaries/GADM_v4.1_global_candidate/`；复制已处理的 `africa_gadm41_level2.gpkg`（373,673,984 字节；SHA-256 `a05e4dae93de62ef193a87e5a8c8d1ef841372db9a7412414542f45710e735eb`）到 `02_derived_checkpoints/boundaries/`。两者源/目标哈希一致。ZIP 内是全球 `gadm_410.gpkg`，**没有再复制 U 盘 2.6 GB 未压缩副本**。非洲 L2 工作集有 53 个 ISO、56,680 行，缺 ESH；全球源有 ESH 4 条 L1 边界。旧代码要逐国 L1/L2 SHP，后续需从源按国导出并检查字段/几何，不能把现有 L2 工作集直接宣称为逐国 SHP 的无损替代。
+- 从 iCloud `中间数据/health_facility_pw_delta_t.gpkg` 机械导出 `fid,country,name,amenity,lon,lat` 至 `02_derived_checkpoints/recovered_health_facilities_candidate/health_facilities_from_legacy_gpkg.csv`，并放同目录 `README.md` 记录 SHA、查询及限制。87,118 个设施点/50 国与旧医疗汇总逐国设施数吻合；这是可用于和修复中的原始医疗 CSV 比对的**旧输入候选**，不含抓取日期/OSM ID，不替换原始档，也不将其中旧医疗结果升级为新结果。
+- 已完成上述本机 iCloud 同步目录副本的复制及哈希检查；`brctl status` 显示新增 GADM ZIP 和部分 WorldPop TIF 仍为 `needs-upload`/`active`，**尚未证实服务器端同步完成**。未删除 U 盘或 iCloud 旧资料；本机可用空间约 18 GiB，不宜继续搬运大型重复档。
+
 目标：`~/Library/Mobile Documents/com~apple~CloudDocs/africa pavement/`。本次是**复制**，U 盘和本地暂存原件未删除；未运行新的科学计算。iCloud Drive 已在本机出现，但上传是异步的。本记录中的“已复制并校验”仅指同步目录中的本地副本，不能等同于服务器端上传完成。
 
 ## 证据等级

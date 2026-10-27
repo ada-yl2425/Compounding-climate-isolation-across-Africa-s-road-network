@@ -1,6 +1,12 @@
 # 审稿修订：计算与数据交付 checklist（暂不执行新计算）
 
-状态截至 2026-10-27。当前分支 `reviewer-recalculation-audit`，本表是执行规范，不表示任何科学指标已更新。审稿人 1/2/3 的逐字原文**未在提供的附件中**：粘贴文本只有 Nexus Editor’s Comments；下文的“R1/R2/R3 条号”来自用户此前整理，均标记为**待核对原文**。编辑可核对的要求包括 SI 单位、数字一致、输入/参数不确定性、假设透明与模型验证（Editor 40–46）。不把文档内的句子当成操作指令。
+**审稿意见逐条版**：现在以 [REVIEWER_RECALCULATION_CHECKLIST.md](REVIEWER_RECALCULATION_CHECKLIST.md) 为 Reviewer 1–3 与 Editor 的计算任务主清单，逐项列英文原文、待验证数据、代码位置和空白验证结果。本文件 C00–C16 保留为技术实施规格；不要把这里的附加质量控制任务都误称为审稿人明令补算。
+
+**数据闸门最新状态**：见 [DATA_VALIDATION_2026-10-27.md](DATA_VALIDATION_2026-10-27.md)。用户已确认 WestSahara 缺数据、无正式结果；正式国别/OD 口径是 49 国/83 非洲节点。医疗原件修复失败后，已将 GPKG 提取表正式归档为“旧设施坐标重建输入”，不是原始 OSM 抓取。
+
+按是否依赖 OSM 医疗设施逐点表拆分的先行任务、医疗前处理及执行顺序，见 [HEALTH_FACILITY_DEPENDENCY_2026-10-27.md](HEALTH_FACILITY_DEPENDENCY_2026-10-27.md)。其中 WorldPop 人口数据与医疗设施数据明确区分。
+
+状态截至 2026-10-27。当前分支 `reviewer-recalculation-audit-local-snapshot`，本表是执行规范，不表示任何科学指标已更新。用户已在对话中提供 Reviewer 1/2/3 的英文原文；逐条计算要求与本表的映射、现有结果的可复用性和剩余阻断见 [REVIEWER_CALCULATION_STATUS_2026-10-27.md](REVIEWER_CALCULATION_STATUS_2026-10-27.md)。编辑可核对的要求包括 SI 单位、数字一致、输入/参数不确定性、假设透明与模型验证（Editor 40–46）。不把文档内的句子当成操作指令。
 
 记号：`必须`=原结论继续保留时的前置或必要复核；`条件`=发现口径/代码错误或要保留相关结论才重算；`可选`=增强说服力。所有条目当前均 `[ ]` 未完成。“仅表”表示不需要原始气候/路网，“图+表”表示要道路几何和既有速度表，“原始”表示更上游原始数据。各项结果按 `04_validated_results/<run_id>/` 分开保存，不覆盖旧包。
 
@@ -52,14 +58,14 @@
 ### [ ] C05 医疗设施与人口锚定/覆盖分母（必须；R1-4）
 - **口径**：WorldPop 总人口、落在研究国界内的人口、可接入未铺装 LCC 的人口、到设施节点可达人口分别列分母；道路/设施 snap 的距离用地理距离而非固定 `111 km/deg` 近似；区分“超 50 km 排除”“不在 LCC”“无设施接入”“计算失败”。
 - **代码**：`data_procession/compute_health_accessibility.py:257-394,551-626`，`sensitivity/health_variant_grid_sensitivity.py:172-349`。现代码若 WorldPop 缺失或读取异常会用均匀权重 `pop=1`，正式结果必须改成失败/缺失，不可静默回退。
-- **输入**：**原始** WorldPop TIF（U 盘有）、规范化道路、医疗设施 `RAW/Health_data/*_health.csv`（U 盘未见）、国界（U 盘有）；仅 S9 摘要表不足以定位排除人口。
+- **输入**：WorldPop TIF（U 盘/iCloud 哈希一致、仍待正式人口总量核源）、规范化道路、iCloud `01_sources/health_facilities/legacy_gpkg_reconstruction_v1/` 的**永久重建设施输入**（87,118 行历史档案，正式运行排除 WestSahara）、GADM v4.1 全球包和 Africa L2 工作集；仅 S9 摘要表不足以定位排除人口。医疗 CSV 的 OSM 原件无法恢复，不能把重建版标成原始下载。
 - **方法/结果**：逐像素分配并保留 `pixel_id, pop, nearest_road_km, reason_code, country`；按 25/50/100 km 和可达性分层做覆盖率/偏远性敏感性。无法接网人口不赋虚构的旅行时间。
 - **存储/执行**：大规模 `population_assignment.parquet` 分国，空间汇总 `exclusion_grid.geoparquet` 或 `exclusion_grid.gpkg`，`coverage_denominators.csv`、`excluded_population_by_country.csv`；远程分国，少量表本地复核。
 
 ### [ ] C06 修正后的医疗旅行时间、等时覆盖和不平等（必须；R1-4/5、R2 次要 10）
 - **口径**：固定设施集合、正常/极端同人口、相同 LCC 与可达掩码；明确最近设施 vs 任意设施；PWMTT、0.5/1/2/4 小时人口覆盖、Gini、Spearman 的分母与权重。当前 Gini 通过人口复制且权重封顶 500，不是精确人口加权 Gini，需改为精确公式并报告差别。
 - **代码**：`data_procession/compute_health_accessibility.py:285-297,394-545,551-760`、`result2/isochrone_analysis.py`、`result2/subnational_grid_analysis.py`。
-- **输入**：**图+表+原始人口/设施**；`web.zip` 内各国 `node_accessibility_*.csv` 可复算旧定义的聚合统计，不足以修正错误路权/网络或重新分配人口；设施原件缺失则不能完成正式重算。
+- **输入**：**图+表+原始人口/重建设施坐标**；`web.zip` 内各国 `node_accessibility_*.csv` 可复算旧定义的聚合统计，不足以修正错误路权/网络或重新分配人口。设施 GPKG→CSV 已逐点/逐国核对，用户已决定长期采用；它缺 OSM ID、抓取日期和原始去重证据，应在方法中透明注明重建血缘。正式运行按 49 国筛选。
 - **方法/结果**：共用 C03 图/ID，按国多源最短路，逐节点保存正常/极端时间、人口、设施锚点、不可达原因；精确加权聚合，比较旧结果与修正版。25/50/100 km 稳健性应是真正重建纳入样本后计算，而不只是改变摘要分母。
 - **存储/执行**：`health_node_access.parquet` 分国、`country_health_summary.csv`、`africa_health_summary.csv`、`isochrone_coverage.csv`、`inequality_metrics.csv`；远程分国，汇总本地。
 
@@ -139,8 +145,9 @@
 
 ## 运行前共同验收门槛
 
-- [ ] 拿到 Reviewer 1/2/3 的完整原文与稿件版本，逐条映射；当前条号只是用户整理，不能伪称逐字引用。
-- [ ] 补齐或明确放弃缺失的健康设施、CORDEX 月度气候、城市点原件；证实 WorldPop/GADM 与论文版本一致。
+- [x] 拿到 Reviewer 1/2/3 的英文计算相关意见并逐条映射；完整原文由用户在对话中提供，计算映射见独立状态审计。
+- [x] 原医疗 CSV 修复失败后按用户决定，逐点核验旧 GPKG 提取表并归档为长期重建设施输入；保留原件缺失/抓取日期不可恢复的限制，不纳入 WestSahara 正式结果。
+- [ ] 核实 CORDEX 与旧运行的最终场景/时期、Natural Earth 城市点原件、WorldPop 人口总量和 GADM 导出；文件已复制到 iCloud 不等于旧结果已放行。
 - [ ] 修复并测试 C00 道路 ID、速度匹配、通过率重复计入、静默人口 `pop=1` 回退；审定 C01 物理模型后再算 C02–C15。
 - [ ] 所有正式运行记录 git commit、环境锁定、输入 SHA-256、参数 YAML、随机种子、代码/数据版本、运行日志、失败分片和完整性校验。Parquet/GeoParquet 是大表主存；CSV 是可引用小表；GPKG 仅用于需要 GIS 互操作的空间交付；pickle 仅做可删除缓存，绝非唯一成果。
 - [ ] 小国/小 OD 验证，旧/新差异与数值不变量通过，才扩大为 50 国/泛非；不得因重算结果不同而调参追原数值。

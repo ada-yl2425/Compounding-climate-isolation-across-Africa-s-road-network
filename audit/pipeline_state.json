@@ -6,7 +6,15 @@
   "overall_status": "in_progress",
   "notes": [
     "2026-10-27: iCloud CORDEX archive curated to 30 monthly NetCDF inputs; file metadata validated, but source identity and 10-year versus 11-year code window remain open.",
-    "2026-10-27: reviewer recalculation input-gap audit refreshed; no scientific model rerun has started."
+    "2026-10-27: reviewer recalculation input-gap audit refreshed; no scientific model rerun has started.",
+    "2026-10-27: checklist split by dependency on OSM health-facility point data; only planning and read-only code/data review, no new scientific calculation.",
+    "2026-10-27: non-health input gaps rechecked against visible iCloud files and mounted Drive symlinks; USB absent at that audit point; no scientific rerun.",
+    "2026-10-27: USB remounted; WorldPop TIFFs, GADM global ZIP and Africa L2 checkpoint copied to iCloud and SHA-256 matched, while iCloud server upload remains unconfirmed.",
+    "2026-10-27: legacy healthcare GPKG yielded 87,118 traceable candidate facility rows; old repository curvature and SRTM slope generation identified; Reviewer 1/2/3 full comments received and computational requirements mapped; no scientific rerun.",
+    "2026-10-27: reviewer-specific calculation checklist refreshed with verbatim computation-relevant excerpts, input/code requirements, and blank verification-result fields; 11 scientific tasks remain unverified.",
+    "2026-10-27: parallel data audit verified climate NC internal identity, USB/iCloud population and boundaries, road archive sample, old results usability, and GPKG-to-CSV health input; user confirmed WestSahara missing formal results.",
+    "2026-10-27: original health CSV repair failed; adopted the GPKG-extracted 87,118-row CSV as permanent provenance-labeled reconstructed legacy input, moved to 01_sources/health_facilities/legacy_gpkg_reconstruction_v1 without making duplicate country copies. Scientific reruns have not started.",
+    "2026-10-27: created recalc/00-foundation and a gated cx3 execution DAG. Prioritize model/sample/ID decisions, shared intermediate tables, meaningful unit tests and one-country pilot before any remote scientific array. Interactive cx3 terminal opened for user login; authentication and remote environment remain unverified."
   ],
   "stages": {
     "research": {
@@ -66,7 +74,12 @@
     "frst_source_verification": "audit/FRST_FIGSHARE_VERIFICATION.csv",
     "cordex_selection": "audit/CORDEX_SELECTION_2026-10-27.md",
     "cordex_hashes": "audit/CORDEX_SHA256_2026-10-27.csv",
-    "recalculation_input_gaps": "audit/RECALCULATION_INPUT_GAPS_2026-10-27.md"
+    "recalculation_input_gaps": "audit/RECALCULATION_INPUT_GAPS_2026-10-27.md",
+    "health_facility_dependency": "audit/HEALTH_FACILITY_DEPENDENCY_2026-10-27.md",
+    "reviewer_calculation_status": "audit/REVIEWER_CALCULATION_STATUS_2026-10-27.md",
+    "reviewer_recalculation_checklist": "audit/REVIEWER_RECALCULATION_CHECKLIST.md",
+    "data_validation": "audit/DATA_VALIDATION_2026-10-27.md",
+    "remote_recalculation_plan": "audit/REMOTE_RECALC_EXECUTION_PLAN.md"
   },
   "integrity": {
     "pre_review": null,

@@ -1,5 +1,21 @@
 # 审稿重算输入缺口复核（2026-10-27）
 
+**最终当日更新**：完整数据身份/格式与旧结果可复用分级以 [DATA_VALIDATION_2026-10-27.md](DATA_VALIDATION_2026-10-27.md) 为准。原医疗 CSV 修复失败，用户已采用 iCloud `01_sources/health_facilities/legacy_gpkg_reconstruction_v1/` 的 GPKG 提取 CSV 作永久**重建设施坐标输入**；正式分析排除用户确认缺数据的 WestSahara。旧 84 个城市节点表可按 `iso3 != ESH` 精确取得 83 个历史坐标输入，Natural Earth 原件未找到仍是血缘缺口；旧 84 节点结果不能只删 ESH 行。30 个 CORDEX NC 内部一致，但月长、120 月聚合/12 次同值迭代、未来 10/11 年口径与坡度/曲率链尚未审定。下文先前“医疗原件需找回”“U 盘未挂载”等描述是当时快照，不代表当前阻断状态。
+
+## 新增输入状态更新（U 盘重连及旧结果核查后）
+
+下文旧时点的“U 盘未挂载/WorldPop、边界未在 iCloud”已由 [ICLOUD_MIGRATION_2026-10-27.md](ICLOUD_MIGRATION_2026-10-27.md) 的新增迁移记录取代。WorldPop 53 个 TIF、全球 GADM ZIP 和非洲 L2 工作集现位于 iCloud 同步目录、源/副本 SHA 一致；仍为**候选**，尚缺原下载版本、人口总量、逐国边界导出及 ESH/WestSahara 缺失处理。Natural Earth 原始 populated places 在本次 U 盘定向检索未找到；旧 `africa_nodes.csv` 有 84 节点（50 首都＋34 megacities），不是稿件所称 83，需澄清是否/何时剔除 WestSahara。旧仓已有曲率和坡度生成函数，但与现稿 CORDEX 速度脚本不是同一计算链，须审计后只复用几何提取思路，不可声称旧主结果已用该函数。
+
+另从旧医疗 GPKG 恢复了含 87,118 行坐标/类别的候选表；其逐国行数与旧医疗汇总吻合。该表不含 Overpass 抓取日期、OSM ID 或原始去重规则，不能替代正在修复的权威原件。旧医疗节点和未来医疗节点存在版本冲突，不可混用；旧逐节点固定路径分解仍未找到。
+
+## 当日再次核查：除医疗设施之外
+
+对 iCloud 同步目录作只读核查：`01_sources/roads/FRST_figshare_29424107_v1/` 有 50 个 RAR；`01_sources/climate/CORDEX_AFR44_SMHI-RCA4_v1/` 有 30 个 NC；`01_sources/terrain/pending_provenance/` 有 3 个 TIFF。**在同步目录可见不等于再次验证云端上传完成或科学口径已放行**。`01_sources/` 当前没有 `population/`、`boundaries/`、`cities/` 类目录。U 盘 `/Volumes/GALACTIC/非洲道路proj/` 当前未挂载，无法复核此前所见的 WorldPop/GADM 候选。桌面与 Downloads 的定向文件名检索亦未找到这些原件。
+
+Google Drive 挂载的 `africa_energy/raw_data/worldpop/` 和 `gadm/` 有文件名/国别目录，但抽查 Kenya TIF 与 GADM 路径是指向已不存在的 `我的云端硬盘/africa_pavement/RAW/...` 的**失效软链接**，不能计作可读取的数据。
+
+因此，**非医疗 P0** 是：WorldPop 2020 constrained UN-adjusted 逐国 TIF 的实际文件与版本/人口核验；道路坡度/曲率的最终逐边属性或可复建处理链（坡度栅格候选已在，未证明旧计算使用）。**非医疗 P1** 是：Natural Earth 1:10m populated places 原件/节点选择记录，以及 GADM v4.1 边界实际文件/图层核验。旧运行命令、参数、日志、稳定道路 ID 映射及 CORDEX 下载 dataset ID/官方校验属于**溯源证据缺口**，不是让用户另找一个气候模型。World Bank 指标和外部灾害观测仅在保留对应回归/验证分析时需要。
+
 范围：只核验当前可见的 iCloud 归档、先前 U 盘/Google Drive 审计记录、稿件/SI 与代码；没有执行新的道路、路网、医疗或干预计算。`未在 iCloud` 不等于源数据不存在，尤其 U 盘此时未挂载。证据等级遵循 `PROVENANCE_GATE.md`。
 
 ## 已到位，但仍有口径闸门
