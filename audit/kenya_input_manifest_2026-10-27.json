@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "purpose": "G0/G1 engineering pilot only; not released for scientific result production",
+  "source_root": "/Users/tuibubansurfacepro/Library/Mobile Documents/com~apple~CloudDocs/africa pavement",
+  "files": [
+    {
+      "path": "01_sources/roads/FRST_figshare_29424107_v1/Kenya.rar",
+      "bytes": 157713116,
+      "sha256": "0d441d7a8acf39d143c85e315f0447713af9c7b897a8e0596321d5553ebbb0ab"
+    },
+    {
+      "path": "01_sources/climate/CORDEX_AFR44_SMHI-RCA4_v1/pr_AFR-44_MPI-M-MPI-ESM-LR_rcp45_r1i1p1_SMHI-RCA4_v1_mon_201101-202012.nc",
+      "bytes": 10896857,
+      "sha256": "2dc45ef9f0cc02cf4a278bae626e0407c5695623063fb430ffe4c6d9160aa1b8"
+    },
+    {
+      "path": "01_sources/climate/CORDEX_AFR44_SMHI-RCA4_v1/mrso_AFR-44_MPI-M-MPI-ESM-LR_rcp45_r1i1p1_SMHI-RCA4_v1_mon_201101-202012.nc",
+      "bytes": 6012259,
+      "sha256": "aea258a05572fca93fae82582fd7296ad407ca282c746d1d19467a06a4e8e580"
+    },
+    {
+      "path": "01_sources/population/WorldPop_2020_UNadj_constrained_candidate/ken_ppp_2020_UNadj_constrained.tif",
+      "bytes": 38077193,
+      "sha256": "bf775d71507bf375f14afb316dbdaa0f13fb3d7bff5f3e3d0139591b2706b8d2"
+    },
+    {
+      "path": "01_sources/terrain/pending_provenance/africa_slope_1km.tif",
+      "bytes": 134594812,
+      "sha256": "bd2d839c2398dd4dd87980014a7d24028753c8588c0277ad0b7f1b6ae6f88242"
+    },
+    {
+      "path": "01_sources/terrain/pending_provenance/africa_elevation_1km.tif",
+      "bytes": 45823550,
+      "sha256": "b7924c4ca7e1d96db9efccf27bc18f17b753f969d2fc88d69b5cd66c1d8310cd"
+    },
+    {
+      "path": "01_sources/health_facilities/legacy_gpkg_reconstruction_v1/health_facilities_from_legacy_gpkg.csv",
+      "bytes": 5750503,
+      "sha256": "d2af7770f1b4817ea3da015d62b1e8e445b95954d4e5d99b077c923b1bb98638"
+    },
+    {
+      "path": "02_derived_checkpoints/legacy_reference/web_components/africa_layer.zip",
+      "bytes": 8136,
+      "sha256": "4de23479d5176429c16bd534ba976976bbea13fd441fe636e062031d9ca1a077"
+    }
+  ]
+}
