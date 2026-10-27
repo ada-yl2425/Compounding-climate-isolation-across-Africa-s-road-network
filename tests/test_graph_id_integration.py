@@ -29,10 +29,13 @@ def test_graph_builder_keeps_source_road_ids_after_surface_filter(tmp_path):
             "road_id", "V_normal", "V_extreme", "passable_rate_extreme"
         ))
         writer.writeheader()
-        writer.writerow({"road_id": "Kenya_road_1", "V_normal": 10, "V_extreme": 5, "passable_rate_extreme": 1})
+        writer.writerow({"road_id": "Kenya_road_1", "V_normal": 10, "V_extreme": 5, "passable_rate_extreme": 0.5})
         writer.writerow({"road_id": "Kenya_road_2", "V_normal": 20, "V_extreme": 10, "passable_rate_extreme": 1})
 
-    normal, _, _, edges, _ = build_graphs_from_shp(shp, speed)
+    normal, extreme, _, edges, _ = build_graphs_from_shp(shp, speed)
     assert normal.number_of_edges() == 2
     assert set(edges["road_id"]) == {"Kenya_road_1", "Kenya_road_2"}
     assert sorted(round(value, 1) for value in edges["w0"] * 10 / edges["length_km"]) == [0.5, 1.0]
+    road_1 = edges.set_index("road_id").loc["Kenya_road_1"]
+    assert road_1.w1 == pytest.approx(road_1.length_km / 5)
+    assert extreme[road_1.u][road_1.v]["weight"] == pytest.approx(road_1.w1)

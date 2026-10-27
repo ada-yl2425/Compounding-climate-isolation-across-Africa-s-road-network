@@ -30,7 +30,7 @@ road_geometry:
 
 network:
   parallel_physical_edges: LEGACY_NX_GRAPH_COLLAPSE_CONFIRMED_FIX_PENDING
-  passability_speed_and_edge_weight_semantics: LEGACY_DOUBLE_PASSABILITY_PENALTY_CONFIRMED_SCIENTIFIC_DECISION_PENDING
+  passability_speed_and_edge_weight_semantics: USER_CONFIRMED_SINGLE_APPLICATION_V_EXTREME_ALREADY_EFFECTIVE_SPEED_DOWNSTREAM_RECALC_REQUIRED
   west_sahara_road_transit_rule: UNRESOLVED
 
 population_and_boundaries:

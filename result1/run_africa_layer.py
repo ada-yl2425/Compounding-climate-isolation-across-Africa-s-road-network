@@ -251,7 +251,8 @@ def build_country_graph(country, node_offset):
         else:
             V_n, V_e, pb = v_n_med, v_n_med, 0.0
         w0 = lkm / V_n
-        w1 = lkm / V_e / (1.0 - min(pb, 0.99))
+        # V_extreme already includes the passability factor.
+        w1 = lkm / V_e
         if G0.has_edge(u, v):
             if w0 < G0[u][v].get("weight", 1e9):
                 G0[u][v]["weight"] = w0

@@ -134,7 +134,7 @@ def compute_future_cv(
     cv_future = baseline_cv.copy()
     matched = match_idx >= 0
     road_idx = match_idx[matched]
-    effective_speed = roads["V_extreme"][road_idx] * (1.0 - roads["p_block"][road_idx])
+    effective_speed = roads["V_extreme"][road_idx]
     vals = roads["V_normal"][road_idx] / np.clip(effective_speed, 0.5, None) - 1.0
     cv_future[matched] = np.clip(vals, 0.0, None)
     return cv_future

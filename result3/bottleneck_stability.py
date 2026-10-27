@@ -11,7 +11,7 @@ Method
   under extreme weather) needs to be re-evaluated for each future scenario.
 
   New CV for an edge (u, v) under a future scenario:
-      CV_future = V_normal / (V_extreme_future × (1 − p_block_future)) − 1
+      CV_future = V_normal / V_extreme_future − 1
 
   V_normal is the same as the baseline (road quality unchanged).
   V_extreme_future and p_block_future come from future_road_speed.py outputs.
@@ -133,7 +133,7 @@ def compute_future_cv(
     edges_df: pd.DataFrame, roads_df: pd.DataFrame, match_series: pd.Series
 ) -> pd.Series:
     """
-    CV_future = V_normal / (V_extreme_future × (1 − p_block_future)) − 1
+    CV_future = V_normal / V_extreme_future − 1
 
     Edges with no match retain their baseline CV.
     """
@@ -148,9 +148,7 @@ def compute_future_cv(
 
     v_n = matched_roads["V_normal"].values.clip(0.5)
     v_e = matched_roads["V_extreme"].values.clip(0.5)
-    pb = matched_roads["p_block"].values.clip(0, 0.99)
-
-    cv_vals = v_n / (v_e * (1.0 - pb)) - 1.0
+    cv_vals = v_n / v_e - 1.0
     cv_vals = np.clip(cv_vals, 0, None)
 
     cv_future.loc[edge_idx] = cv_vals
