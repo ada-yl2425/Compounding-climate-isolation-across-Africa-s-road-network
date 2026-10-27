@@ -164,6 +164,8 @@ C00 单国推进：Kenya 原始 504,366 条道路按旧规则筛出 401,965 条�
 
 C00 图边诊断：对旧 `network_pipeline.py` 的“0.1 km 筛选后重编号”与已验 Kenya 速度表做独立计数，358,791 条候选图边中仅 1 条预计接到自身速度；305,759 条误接别的源道路速度，53,031 条预计走默认速度。见 [KENYA_ROAD_SPEED_ALIGNMENT_2026-10-27.md](KENYA_ROAD_SPEED_ALIGNMENT_2026-10-27.md) 和 iCloud `05_manifests/kenya_graph_reindex_diagnostic_491c30f_20261027/legacy_graph_reindex_diagnostic.json`。这是在旧图使用相同源文件/行序前提下的**代码逻辑推断**，不是已读取旧图并测得的 OD 误差。已将五条旧图构建路径改为源文件读取后即赋 ID，本机 `57 passed, 3 skipped`，cx3 三道路真实 Shapefile→图微测 `1 passed`；尚未做全 Kenya 纠正图端到端试跑，不能勾选 C00/C03。即使 C01 最终只改论文文字，**这一独立图 join 缺陷也要求受影响的网络和下游结果重算**。
 
+C00 49 国审计准备（2026-10-27）：提交 `7d691fa` 已建立 49 国道路包↔旧速度 CSV 成员登记，明确排除 WestSahara 并映射 `CentralAfrian`→`CentralAfrican`；登记文件 `audit/road_speed_alignment_registry_2026-10-27.csv` SHA-256 `b318045ec5af76d3354a31de086b218b3b383689e44d7cf282e15675c4af8440`。本机测试 `61 passed, 4 skipped`，cx3 相关测试 `7 passed`。远端运行根目录 `/rds/general/user/yl2425/ephemeral/africa_pavement_recalc/road-speed-align49-7d691fa-20261027-223045/`；旧速度整包已传入远端共享输入且 SHA-256 与 iCloud 原包一致，Benin 道路包的官方 MD5/大小亦一致，单国数组脚本试跑 `4485567.pbs-7` 已提交。其余道路包传输中、Benin 作业未验收，故 **49 国审计仍未完成、C00 保持 `[ ]`**；不得据此放行科学结果。
+
 ## 本地与远程的分工、传输方案
 
 本地做 C00 样本核查、C01 口径与单测、C07/C11/C16 小表聚合及最终 QA；远程做 C02 的国×情景路段计算、C03/04 网络最短路、C05/06/08/09 医疗与栅格、C10/12/13/14 大图和重复模拟。远程资源不是已配置就绪；需先确认可用集群、CPU/内存/磁盘配额和可访问的对象存储。泛非图建议单个高内存任务，国别和随机重复用数组任务；避免同机同时启动 50 个大图进程。
