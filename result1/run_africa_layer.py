@@ -153,6 +153,10 @@ def build_country_graph(country, node_offset):
         print(f"  [ERROR] {country}: {e}")
         return None
 
+    # Match the speed writer's IDs from the original, unfiltered source rows.
+    if "road_id" not in gdf.columns:
+        gdf["road_id"] = [f"{country}_road_{i}" for i in range(len(gdf))]
+
     if gdf.crs is None or gdf.crs.to_epsg() != 4326:
         gdf = gdf.to_crs("EPSG:4326")
     if "length_km" not in gdf.columns:
@@ -161,9 +165,6 @@ def build_country_graph(country, node_offset):
     gdf = gdf[gdf["length_km"] >= MIN_ROAD_LENGTH_KM].reset_index(drop=True)
     if gdf.empty:
         return None
-    if "road_id" not in gdf.columns:
-        gdf["road_id"] = [f"{country}_road_{i}" for i in range(len(gdf))]
-
     try:
         df_sp = pd.read_csv(speed_path)
         if "year" in df_sp.columns:

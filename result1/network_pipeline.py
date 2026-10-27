@@ -107,6 +107,11 @@ def build_graphs_from_shp(shp_path, iri_path, surface_filter="unpaved"):
 
     with T("Read shapefile"):
         gdf = gpd.read_file(shp_path)
+    # Speed CSV IDs are assigned in the unfiltered source feature order.
+    # Assign before surface/length filters so reset_index cannot change identity.
+    stem = Path(shp_path).stem
+    if "road_id" not in gdf.columns:
+        gdf["road_id"] = [f"{stem}_road_{i}" for i in range(len(gdf))]
     if gdf.crs is None or gdf.crs.to_epsg() != 4326:
         gdf = gdf.to_crs("EPSG:4326")
 
@@ -124,9 +129,6 @@ def build_graphs_from_shp(shp_path, iri_path, surface_filter="unpaved"):
         ].copy()
     gdf = gdf[gdf["length_km"] >= MIN_ROAD_LENGTH_KM].reset_index(drop=True)
 
-    stem = Path(shp_path).stem
-    if "road_id" not in gdf.columns:
-        gdf["road_id"] = [f"{stem}_road_{i}" for i in range(len(gdf))]
     print(f"  Filtered segments: {len(gdf):,}")
 
     df_iri = pd.read_csv(iri_path)

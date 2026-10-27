@@ -176,6 +176,10 @@ def build_graphs(shp_path: Path, iri_path: Path):
     import geopandas as gpd
 
     gdf = gpd.read_file(shp_path)
+    # Preserve the source row used in the historical speed CSV's road_id.
+    stem = Path(shp_path).stem
+    if "road_id" not in gdf.columns:
+        gdf["road_id"] = [f"{stem}_road_{i}" for i in range(len(gdf))]
     if gdf.crs is None or gdf.crs.to_epsg() != 4326:
         gdf = gdf.to_crs("EPSG:4326")
     if "length_km" not in gdf.columns:
@@ -189,10 +193,6 @@ def build_graphs(shp_path: Path, iri_path: Path):
     if surf_col:
         gdf = gdf[gdf[surf_col].str.lower().str.contains("unpaved", na=False)].copy()
     gdf = gdf[gdf["length_km"] >= MIN_ROAD_LENGTH_KM].reset_index(drop=True)
-
-    stem = Path(shp_path).stem
-    if "road_id" not in gdf.columns:
-        gdf["road_id"] = [f"{stem}_road_{i}" for i in range(len(gdf))]
 
     df_iri = pd.read_csv(iri_path)
     df_iri["V_normal"] = df_iri["V_normal"].clip(lower=0.01)
