@@ -6,7 +6,7 @@
 
 - U 盘只读源：`/Volumes/GALACTIC/非洲道路proj/`，约 132 GB。不得作为后续计算的工作目录或输出目录。
 - 本机磁盘仅约 14 GiB 可用。不能无筛选地复制 U 盘全部内容，尤其不能复制约 102 GB 的 `merged_climate_pave`。
-- 常规 iCloud Drive 路径 `~/Library/Mobile Documents/com~apple~CloudDocs` 当前不存在，`~/Library/CloudStorage` 仅挂载两个 Google Drive。故**目前没有可验证的 iCloud 同步位置**；不在本机手工创建同名“伪 iCloud”目录。应在系统中启用 iCloud Drive 后再次核验同步根路径，再建立 `africa pavement` 并迁移。
+- iCloud Drive 已于 2026-10-27 在本机出现：`~/Library/Mobile Documents/com~apple~CloudDocs/africa pavement/`。已复制的批次、校验值与待上传状态见 [ICLOUD_MIGRATION_2026-10-27.md](ICLOUD_MIGRATION_2026-10-27.md)。同步目录中的文件还需确认服务器上传完成；本机仅余约 6 GiB，暂不搬运其它大档。
 - 旧稳健性清单记录的 Google Drive `.../我的云端硬盘/africa_pavement` 是历史路径；当前实际挂载目录名为 `我的雲端硬碟`，且其中未见 `africa_pavement`。历史清单中的 `exists=True` 不能视为当前存在。
 - 本机暂存区：`~/Desktop/africa-pavement-local-staging/`，仅用于小体量压缩档的分类备份、清单和远程打包准备；不是 iCloud。计算工作集必须在本机高速盘或远程 RDS/scratch 解压后读写，不直接在云同步文件夹上随机读取。
 

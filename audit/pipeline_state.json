@@ -58,7 +58,9 @@
     }
   },
   "materials": {
-    "manuscript": "Climate_change_fragments_Africa_s_road_network_v4_adj(1).docx"
+    "manuscript": "Climate_change_fragments_Africa_s_road_network_v4_adj(1).docx",
+    "data_migration_manifest": "audit/ICLOUD_MIGRATION_2026-10-27.md",
+    "frst_source_verification": "audit/FRST_FIGSHARE_VERIFICATION.csv"
   },
   "integrity": {
     "pre_review": null,
