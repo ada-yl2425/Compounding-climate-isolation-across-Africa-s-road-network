@@ -35,7 +35,7 @@
 - **口径**：同一基准时窗、情景和道路 ID；区别日/月极端定义；记录所有参数、插值网格、缺测和路面类型。未来各 GCM/RCP/时段同法。
 - **代码**：`data_procession/compute_road_speed.py`、`data_procession/future_road_speed.py`。
 - **输入**：**原始** CORDEX `pr/mrso` 月度 NetCDF 与规范化道路；现 U 盘 `road_speed_cordex.zip`（50 国）、`road_speed_future.zip`（6 场景）只能做旧口径参照；102 GB `merged_climate_pave` 若经变量/时窗/ID 验证，可替代最昂贵的气候-道路空间连接，但不自动等于原始模型输入。
-- **场景缺口**：未来 ZIP 的 RCP4.5 只有 MPI 三期和 MIROC 2045/2065，缺主文所述 MIROC 2085；`future_road_speed.py` 的中心年±5 年是 11 年，不等于文中 2041–2050 等 10 年。必须找回实际运行参数/日志并核对每期 120 个月后才能放行。
+- **场景缺口**：未来 ZIP 的 RCP4.5 只有 MPI 三期和 MIROC 2045/2065，缺主文所述 MIROC 2085；`future_road_speed.py` 直接运行的中心年±5 年是 11 年，而 `run_bottleneck_stability.py` 默认传 ±4 年为 9 年，都不等于主文 2041–2050 等 10 年。必须找回实际运行参数/日志并核对每期 120 个月后才能放行。
 - **方法/结果**：向量化道路-气候格点映射一次缓存，按 `country/scenario/period/member` 分区，计算 `IRI_normal/extreme`、纯速度、有效速度/通行状态和 QC；与旧值做逐边差异和单位检查。
 - **存储/执行**：映射 `road_cell_index.parquet`，路段结果分区 Parquet，国家统计 CSV；远程数组任务，输入先打包上传、在远程解压。原气候没找回之前不执行。
 

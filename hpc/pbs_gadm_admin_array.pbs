@@ -1,11 +1,11 @@
 #!/bin/bash -l
 #PBS -l select=1:ncpus=2:mem=16gb
 #PBS -l walltime=02:00:00
-#PBS -J 1-49
+#PBS -J 1-49%4
 #PBS -N gadm_admin49
 
-# Do not submit until the global-source registry manifest is PASS and G0 has
-# authorized this boundary preprocessing. One array item handles one country.
+# Do not submit until the global-source registry manifest is PASS. This is
+# boundary preprocessing only, not a release of G0 road-model science.
 set -euo pipefail
 module load tools/prod geopandas/0.14.2-foss-2023a Arrow/16.1.0-gfbf-2023b
 : "${GADM_CODE_ROOT:?absolute code checkout is required}"

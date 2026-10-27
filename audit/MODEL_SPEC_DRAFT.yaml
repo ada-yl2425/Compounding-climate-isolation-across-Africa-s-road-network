@@ -14,13 +14,14 @@ iri_progression:
   equilibrium_floor_m_per_km: 12.0
   floor_applies_to: target_not_every_intermediate_iri
   mgd_numeric_value: 0.5
-  mgd_definition_and_evidence: UNRESOLVED
+  mgd_definition: DIMENSIONLESS_DUST_RATIO_NOT_GRAVEL_DEPTH
+  mgd_numeric_evidence: UNRESOLVED_UNIFORM_0_5_ASSUMPTION
 
 climate:
   baseline_window: 2011-01_to_2020-12
   precipitation_flux_to_month_total: ACTUAL_CF_BOUNDS_OR_CALENDAR_DAYS_LOCAL_TEST_PASS_REMOTE_TEST_PENDING
-  monthly_iteration_input: UNRESOLVED_120_MONTH_SEQUENCE_VS_REPRESENTATIVE_MONTH
-  future_windows: UNRESOLVED_10_VS_11_YEARS
+  monthly_iteration_input: LEGACY_REPRESENTATIVE_MONTH_REPEATED_12_TIMES_PAPER_WORDING_TO_RECONCILE
+  future_windows: PAPER_10_YEAR_VS_DIRECT_SCRIPT_11_YEAR_VS_ORCHESTRATOR_9_YEAR_UNRESOLVED
 
 road_geometry:
   physical_edge_id_crosswalk: RAW_SOURCE_ROW_VS_POST_FILTER_RENUMBER_MISMATCH_CONFIRMED_FIX_PENDING

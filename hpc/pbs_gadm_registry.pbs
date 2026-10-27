@@ -1,0 +1,24 @@
+#!/bin/bash -l
+#PBS -l select=1:ncpus=2:mem=8gb
+#PBS -l walltime=01:00:00
+#PBS -N gadm49_registry
+
+# One-time source/ISO registry before any 49-country boundary array.
+set -euo pipefail
+: "${GADM_RUN_ROOT:?new run-specific directory is required}"
+: "${GADM_SOURCE:?extracted global gadm_410.gpkg is required}"
+cd "$GADM_RUN_ROOT/code"
+
+module load geopandas/0.14.2-foss-2023a \
+  xarray/2023.9.0-gfbf-2023a \
+  python-igraph/0.11.4-foss-2023a \
+  Arrow/16.1.0-gfbf-2023b
+
+mkdir -p "$GADM_RUN_ROOT/registry"
+"$GADM_RUN_ROOT/venv/bin/python" -m hpc.build_gadm_country_registry \
+  --input "$GADM_SOURCE" \
+  --code-map "$GADM_RUN_ROOT/code/data_procession/prepare_city_layer.py" \
+  --registry "$GADM_RUN_ROOT/registry/gadm49_registry.csv" \
+  --manifest "$GADM_RUN_ROOT/registry/gadm49_registry_manifest.json"
+
+echo "GADM_49_REGISTRY_PASS job=${PBS_JOBID:-unknown}"
