@@ -18,8 +18,7 @@ Usage:
         --base-dir <BASE_DIR> \\
         --gcm MPI-M-MPI-ESM-LR \\
         --rcp rcp26 \\
-        --period 2040 \\
-        --window 5
+        --period 2045
 
 Outputs:
     <BASE_DIR>/road_speed_future/{gcm}_{rcp}_{period}/{Country}_road_speed.csv
@@ -63,6 +62,43 @@ _V_NODES = np.array([106, 80, 64, 53, 46, 40, 35, 32], dtype=float)
 
 MRSO_PASSABLE_PERCENTILE = 75
 MRSO_EXTREME_PERCENTILE = 95
+
+
+def select_future_years(period, *, start_year=None, end_year=None, legacy_window=None):
+    """Choose explicit years; paper labels 2045/65/85 mean ten-year decades.
+
+    legacy_window retains the old symmetric inclusive behavior only when
+    explicitly requested for audit comparisons.
+    """
+    if (start_year is None) != (end_year is None):
+        raise ValueError("start_year and end_year must be supplied together")
+    if legacy_window is not None and start_year is not None:
+        raise ValueError("explicit years and legacy_window are mutually exclusive")
+    if start_year is not None:
+        if start_year > end_year:
+            raise ValueError("start_year must be no later than end_year")
+        return list(range(start_year, end_year + 1))
+    if legacy_window is not None:
+        if legacy_window < 0:
+            raise ValueError("legacy_window must be nonnegative")
+        return list(range(period - legacy_window, period + legacy_window + 1))
+    if period not in (2045, 2065, 2085):
+        raise ValueError("provide explicit years for non-paper future periods")
+    return list(range(period - 4, period + 6))
+
+
+def validate_monthly_coverage(da, years, label):
+    """Fail closed on a missing, duplicated, or out-of-window climate month."""
+    actual = list(
+        zip(da.time.dt.year.values.tolist(), da.time.dt.month.values.tolist())
+    )
+    expected = [(year, month) for year in years for month in range(1, 13)]
+    if actual != expected:
+        raise ValueError(
+            f"{label} monthly coverage mismatch: expected {len(expected)} ordered months, "
+            f"got {len(actual)}; first={actual[:2]}, last={actual[-2:]}"
+        )
+
 
 PAVED_SPEED_NORMAL = 80.0
 PAVED_SPEED_EXTREME = 65.0
@@ -409,10 +445,22 @@ def main():
     )
     parser.add_argument("--rcp", default="rcp45", choices=["rcp26", "rcp45", "rcp85"])
     parser.add_argument(
-        "--period", type=int, default=2040, help="Target year (2040, 2060, or 2080)"
+        "--period",
+        type=int,
+        default=2045,
+        help="Paper period label (2045, 2065, or 2085)",
     )
     parser.add_argument(
-        "--window", type=int, default=5, help="Years ± around period to average over"
+        "--start-year", type=int, default=None, help="Explicit first climate year"
+    )
+    parser.add_argument(
+        "--end-year", type=int, default=None, help="Explicit last climate year"
+    )
+    parser.add_argument(
+        "--window",
+        type=int,
+        default=None,
+        help="Legacy symmetric inclusive ± years; use only for old-run audits",
     )
     parser.add_argument(
         "--countries",
@@ -429,10 +477,18 @@ def main():
         else base / "RAW" / "Climate_data" / "weather_data_raw"
     )
     roads_dir = base / "RAW" / "Road_data"
+    years = select_future_years(
+        args.period,
+        start_year=args.start_year,
+        end_year=args.end_year,
+        legacy_window=args.window,
+    )
     out_dir = base / "road_speed_future" / f"{args.gcm}_{args.rcp}_{args.period}"
+    if out_dir.exists() and any(out_dir.glob("*_road_speed.csv")):
+        raise FileExistsError(
+            f"Existing future speed CSVs in {out_dir}; use a fresh base-dir/run_id"
+        )
     out_dir.mkdir(parents=True, exist_ok=True)
-
-    years = list(range(args.period - args.window, args.period + args.window + 1))
     countries = args.countries or ALL_COUNTRIES
 
     print(f"\n{'='*60}")
@@ -454,6 +510,9 @@ def main():
         )
         print(f"    var=pr/mrso  gcm={args.gcm}  rcp={args.rcp}  years~{args.period}")
         return
+
+    validate_monthly_coverage(da_pr, years, "pr")
+    validate_monthly_coverage(da_mrso, years, "mrso")
 
     print(
         f"  pr  : {da_pr.shape}  range=[{float(da_pr.min()):.1f}, {float(da_pr.max()):.1f}] mm/month"

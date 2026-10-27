@@ -16,7 +16,7 @@ Usage:
         --base-dir <BASE_DIR> \\
         --gcm MPI-M-MPI-ESM-LR \\
         [--climate-dir <CLIMATE_DIR>]  (override NC file location)
-        [--skip-speed-gen]  (skip Step 1 if CSVs already exist)
+        [--skip-speed-gen]  (explicitly reuse existing CSVs; audit their vintage first)
         [--top-k 500]
 
 Pre-requisite: NC climate files accessible in --climate-dir
@@ -72,14 +72,14 @@ def main():
     parser.add_argument(
         "--skip-speed-gen",
         action="store_true",
-        help="Skip Step 1 (future_road_speed.py) if CSVs already exist",
+        help="Explicitly reuse existing speed CSVs; their window/provenance is not verified here",
     )
     parser.add_argument("--top-k", type=int, default=500)
     parser.add_argument(
         "--window",
         type=int,
-        default=4,
-        help="Year window ± period for future_road_speed.py",
+        default=None,
+        help="Legacy symmetric inclusive ± years; omitted uses paper's ten-year windows",
     )
     args = parser.parse_args()
 
@@ -96,6 +96,12 @@ def main():
 
     print("[Pre-flight] Existing future road speed CSVs:")
     available = preflight_check(base, args.gcm)
+    if not args.skip_speed_gen and any(available.values()):
+        raise FileExistsError(
+            "Existing future speed CSVs could use the legacy 9/11-year window. "
+            "Use a fresh --base-dir for generation; --skip-speed-gen is an "
+            "explicit, unvalidated reuse option."
+        )
 
     edge_scores = (
         base / "web" / "network_results" / "bottleneck_paving" / "02_edge_scores.csv"
@@ -112,12 +118,6 @@ def main():
         print(f"\n[Step 1] Generating future road speed CSVs...")
         for rcp in SCENARIOS:
             for period in PERIODS:
-                n_existing = available.get((rcp, period), 0)
-                if n_existing >= 10:
-                    print(
-                        f"  SKIP {args.gcm}_{rcp}_{period}: {n_existing} CSVs already exist"
-                    )
-                    continue
                 cmd = [
                     sys.executable,
                     str(FUTURE_SPEED_SCRIPT),
@@ -129,16 +129,23 @@ def main():
                     rcp,
                     "--period",
                     str(period),
-                    "--window",
-                    str(args.window),
                 ]
+                if args.window is None:
+                    cmd += [
+                        "--start-year",
+                        str(period - 4),
+                        "--end-year",
+                        str(period + 5),
+                    ]
+                else:
+                    cmd += ["--window", str(args.window)]
                 if args.climate_dir:
                     cmd += ["--climate-dir", args.climate_dir]
                 rc = run(cmd, f"future_road_speed: {args.gcm} {rcp} {period}")
                 if rc != 0:
                     print(f"  [WARN] Step 1 failed for {rcp} {period}, continuing...")
     else:
-        print("\n[Step 1] Skipped (--skip-speed-gen set)")
+        print("\n[Step 1] Skipped (--skip-speed-gen); existing CSVs are not validated")
 
     print(f"\n[Step 2] Running bottleneck stability analysis...")
     rc = run(

@@ -1,0 +1,27 @@
+#!/bin/bash -l
+#PBS -l select=1:ncpus=1:mem=4gb
+#PBS -l walltime=01:00:00
+#PBS -N gadm_final49
+
+# Submit only via submit_gadm_finalize_afterok.sh so the scheduler enforces
+# afterok on the 49-country array. No scientific road/population results here.
+set -euo pipefail
+module load tools/prod geopandas/0.14.2-foss-2023a Arrow/16.1.0-gfbf-2023b
+: "${GADM_CODE_ROOT:?}"
+: "${GADM_SOURCE:?}"
+: "${GADM_REGISTRY:?}"
+: "${GADM_MANIFEST:?}"
+: "${GADM_OUTPUT_ROOT:?}"
+: "${GADM_FINAL_MANIFEST:?}"
+: "${GADM_FINAL_CSV:?}"
+: "${GADM_PYTHON:?}"
+
+cd "$GADM_CODE_ROOT"
+"$GADM_PYTHON" -m hpc.finalize_gadm_admin \
+  --registry "$GADM_REGISTRY" \
+  --registry-manifest "$GADM_MANIFEST" \
+  --source "$GADM_SOURCE" \
+  --output-root "$GADM_OUTPUT_ROOT" \
+  --manifest "$GADM_FINAL_MANIFEST" \
+  --summary "$GADM_FINAL_CSV"
+echo "GADM_FINALIZER_PASS manifest=$GADM_FINAL_MANIFEST summary=$GADM_FINAL_CSV"

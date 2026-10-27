@@ -23,6 +23,43 @@ def _import_speed_for_non_geospatial_test(monkeypatch, future=False):
     return importlib.import_module(f"data_procession.{name}")
 
 
+@pytest.mark.parametrize("future", [False, True])
+def test_user_selected_iri_step_remains_one_twelfth_year(monkeypatch, future):
+    """Guard the chosen submitted implementation, not its external calibration."""
+    speed = _import_speed_for_non_geospatial_test(monkeypatch, future=future)
+    assert speed.HDM4_DT == pytest.approx(1 / 12)
+
+
+@pytest.mark.parametrize(
+    ("period", "first", "last"),
+    [(2045, 2041, 2050), (2065, 2061, 2070), (2085, 2081, 2090)],
+)
+def test_paper_future_periods_have_ten_complete_years(monkeypatch, period, first, last):
+    import xarray as xr
+
+    speed = _import_speed_for_non_geospatial_test(monkeypatch, future=True)
+    years = speed.select_future_years(period)
+    assert years == list(range(first, last + 1))
+    months = pd.date_range(f"{first}-01-01", f"{last}-12-01", freq="MS")
+    assert len(months) == 120
+    climate = xr.DataArray(np.ones(len(months)), dims="time", coords={"time": months})
+    speed.validate_monthly_coverage(climate, years, "synthetic")
+    with pytest.raises(ValueError, match="monthly coverage mismatch"):
+        speed.validate_monthly_coverage(
+            climate.isel(time=slice(1, None)), years, "synthetic"
+        )
+
+
+def test_legacy_symmetric_future_window_requires_explicit_request(monkeypatch):
+    speed = _import_speed_for_non_geospatial_test(monkeypatch, future=True)
+    assert speed.select_future_years(2045, legacy_window=5) == list(range(2040, 2051))
+    assert speed.select_future_years(2045, legacy_window=4) == list(range(2041, 2050))
+    with pytest.raises(ValueError, match="explicit years"):
+        speed.select_future_years(2045, start_year=2041, end_year=2050, legacy_window=5)
+    with pytest.raises(ValueError, match="non-paper"):
+        speed.select_future_years(2040)
+
+
 @pytest.mark.parametrize(
     ("mmp_m", "slope_pct", "expected_target"),
     [(0.1, 13.0, 12.0), (0.0, 0.0, 21.4)],
