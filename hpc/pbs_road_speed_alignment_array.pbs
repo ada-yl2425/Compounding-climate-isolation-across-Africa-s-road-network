@@ -1,0 +1,48 @@
+#!/bin/bash -l
+#PBS -l select=1:ncpus=2:mem=12gb
+#PBS -l walltime=03:00:00
+#PBS -N road_align49
+
+# C00 engineering-only source-to-historical-speed identity audit.
+set -euo pipefail
+: "${AUDIT_ROOT:?AUDIT_ROOT is required}"
+: "${ROAD_ARCHIVE_ROOT:?ROAD_ARCHIVE_ROOT is required}"
+: "${SPEED_ZIP:?SPEED_ZIP is required}"
+: "${PYTHON_BIN:?PYTHON_BIN is required}"
+: "${PBS_ARRAY_INDEX:?PBS_ARRAY_INDEX is required}"
+REGISTRY="$AUDIT_ROOT/registry/road_speed_alignment_registry.csv"
+test -s "$REGISTRY"
+ROW=$(sed -n "$((PBS_ARRAY_INDEX + 2))p" "$REGISTRY")
+IFS=, read -r INDEX ARCHIVE_COUNTRY SPEED_COUNTRY ARCHIVE_FILE EXPECTED_BYTES EXPECTED_MD5 SPEED_MEMBER <<< "$ROW"
+test "$INDEX" = "$PBS_ARRAY_INDEX"
+[[ "$ARCHIVE_COUNTRY" =~ ^[A-Za-z]+$ ]]
+[[ "$SPEED_COUNTRY" =~ ^[A-Za-z]+$ ]]
+[[ "$ARCHIVE_FILE" = "${ARCHIVE_COUNTRY}.rar" ]]
+[[ "$SPEED_MEMBER" = "road_speed_cordex/${SPEED_COUNTRY}_road_speed.csv" ]]
+
+cd "$AUDIT_ROOT/code"
+module load tools/prod p7zip/17.04-GCCcore-12.3.0 \
+  geopandas/0.14.2-foss-2023a \
+  xarray/2023.9.0-gfbf-2023a \
+  python-igraph/0.11.4-foss-2023a \
+  Arrow/16.1.0-gfbf-2023b
+
+ARCHIVE="$ROAD_ARCHIVE_ROOT/$ARCHIVE_FILE"
+test -s "$ARCHIVE"
+test "$(stat -c %s "$ARCHIVE")" = "$EXPECTED_BYTES"
+test "$(md5sum "$ARCHIVE" | cut -d ' ' -f1)" = "$EXPECTED_MD5"
+WORK="$AUDIT_ROOT/work/${ARCHIVE_COUNTRY}_${PBS_JOBID%%.*}"
+mkdir -p "$WORK" "$AUDIT_ROOT/results/admin_units/$ARCHIVE_COUNTRY"
+7z x -y "$ARCHIVE" "-o$WORK" >/dev/null
+mapfile -t SHAPEFILES < <(find "$WORK" -type f -name '*.shp')
+test "${#SHAPEFILES[@]}" -eq 1
+unzip -p "$SPEED_ZIP" "$SPEED_MEMBER" > "$WORK/${SPEED_COUNTRY}_road_speed.csv"
+test -s "$WORK/${SPEED_COUNTRY}_road_speed.csv"
+
+"$PYTHON_BIN" -m hpc.audit_road_speed_alignment \
+  --shapefile "${SHAPEFILES[0]}" \
+  --speed-csv "$WORK/${SPEED_COUNTRY}_road_speed.csv" \
+  --country "$SPEED_COUNTRY" \
+  --output "$AUDIT_ROOT/results/admin_units/$ARCHIVE_COUNTRY/road_speed_alignment_qc.json"
+
+echo "ROAD_SPEED_ALIGNMENT_PASS archive_country=$ARCHIVE_COUNTRY speed_country=$SPEED_COUNTRY job=${PBS_JOBID:-unknown}"
