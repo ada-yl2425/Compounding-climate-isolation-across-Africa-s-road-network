@@ -35,4 +35,6 @@
 4. `output_manifest.json`：每个 Parquet/GeoParquet/CSV 的路径、SHA-256、schema、行数、样本量、公式版本及上游 run ID。需要 GIS 互操作才另导出 GPKG。
 5. `REVIEWER_RECALCULATION_CHECKLIST.md`：只有在上述证据和科学数值核对完成后才填“验证结果”和最终数据地址；文件存在本身不代表结果通过。
 
-**当前状态**：只完成静态输入/代码审计和此运行计划；G0 方法决策、G1 共享中间层、科学单元测试及远程 preflight/批量作业均未放行。
+**当前状态**：只完成静态输入/代码审计和此运行计划；G0 方法决策、G1 共享中间层、科学单元测试及远程 preflight/批量作业均未放行。新增明确 P0：投稿公式原始研究的 `T` 单位为天，当前 `1/12` 无系数换算；MGD 是无量纲 dust ratio 而非 0.5 m 深度，见 [MODEL_GATE_FINDINGS_2026-10-27.md](MODEL_GATE_FINDINGS_2026-10-27.md)。
+
+2026-10-27 本机网络预检：`ssh cx3` 在 SSH 密钥交换阶段即被关闭，未到密码提示；本机 `login.cx3.hpc.ic.ac.uk` 经当前隧道 DNS 解析到 `100.64.1.3`，Imperial Cisco 客户端未连接。已打开交互终端供用户自行输入命令/密码，但须先恢复可用网络／学校 Unified Access；不得猜测备用主机或把密码写入仓库。`python -m pytest -q` 旧套件仅 1 个占位测试通过；新增文件清单哈希验证单测另行记录，**不能**当作科学模型放行。

@@ -14,7 +14,8 @@
     "2026-10-27: reviewer-specific calculation checklist refreshed with verbatim computation-relevant excerpts, input/code requirements, and blank verification-result fields; 11 scientific tasks remain unverified.",
     "2026-10-27: parallel data audit verified climate NC internal identity, USB/iCloud population and boundaries, road archive sample, old results usability, and GPKG-to-CSV health input; user confirmed WestSahara missing formal results.",
     "2026-10-27: original health CSV repair failed; adopted the GPKG-extracted 87,118-row CSV as permanent provenance-labeled reconstructed legacy input, moved to 01_sources/health_facilities/legacy_gpkg_reconstruction_v1 without making duplicate country copies. Scientific reruns have not started.",
-    "2026-10-27: created recalc/00-foundation and a gated cx3 execution DAG. Prioritize model/sample/ID decisions, shared intermediate tables, meaningful unit tests and one-country pilot before any remote scientific array. Interactive cx3 terminal opened for user login; authentication and remote environment remain unverified."
+    "2026-10-27: created recalc/00-foundation and a gated cx3 execution DAG. Prioritize model/sample/ID decisions, shared intermediate tables, meaningful unit tests and one-country pilot before any remote scientific array. Interactive cx3 terminal opened for user login; authentication and remote environment remain unverified.",
+    "2026-10-27: official TRB source confirms MGD dust ratio is dimensionless and time T in the manuscript's roughness formula is days between bladings, conflicting with manuscript labels and code 1/12-year exponent. Africa boundary workset is not uniform L2. SSH to cx3 closes before password under current tunnel/VPN routing. Eight local tests pass, seven of them validate byte-manifest safety only; scientific model tests and formal recomputation not started."
   ],
   "stages": {
     "research": {
@@ -79,7 +80,8 @@
     "reviewer_calculation_status": "audit/REVIEWER_CALCULATION_STATUS_2026-10-27.md",
     "reviewer_recalculation_checklist": "audit/REVIEWER_RECALCULATION_CHECKLIST.md",
     "data_validation": "audit/DATA_VALIDATION_2026-10-27.md",
-    "remote_recalculation_plan": "audit/REMOTE_RECALC_EXECUTION_PLAN.md"
+    "remote_recalculation_plan": "audit/REMOTE_RECALC_EXECUTION_PLAN.md",
+    "model_gate_findings": "audit/MODEL_GATE_FINDINGS_2026-10-27.md"
   },
   "integrity": {
     "pre_review": null,
