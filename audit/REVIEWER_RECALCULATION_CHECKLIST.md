@@ -1,6 +1,6 @@
 # Reviewer 计算核验、补算与条件重算 checklist
 
-状态：2026-10-27；分支：`reviewer-recalculation-audit-local-snapshot`。本清单只收录涉及**计算结果核验、补算、或发现错误后重算**的审稿意见，不含纯写作、文献或绘图任务。英文引句逐字摘自用户在对话中提供的 Reviewer 1–3 / Nexus Editor 意见；同一条意见只摘录与计算有关的句子，并以原编号定位，非全文转录。`[ ]` 表示**审稿计算验证尚未完成**，不是认定原结果错误。输入文件核验和旧结果分级见 [DATA_VALIDATION_2026-10-27.md](DATA_VALIDATION_2026-10-27.md)；用户已确认 WestSahara 缺数据、无正式结果，正式范围为 49 国。旧 GPKG 提取表已被采纳为永久**重建版设施坐标输入**，不等于原始 OSM 文件或修订版医疗结果。详细算法、代码范围、输入层级和输出格式见 [RECALCULATION_CHECKLIST.md](RECALCULATION_CHECKLIST.md) 的 C00–C16。
+状态：2026-10-27；当前执行分支：`recalc/00-foundation`。本清单只收录涉及**计算结果核验、补算、或发现错误后重算**的审稿意见，不含纯写作、文献或绘图任务。英文引句逐字摘自用户在对话中提供的 Reviewer 1–3 / Nexus Editor 意见；同一条意见只摘录与计算有关的句子，并以原编号定位，非全文转录。`[ ]` 表示**审稿计算验证尚未完成**，不是认定原结果错误。输入文件核验和旧结果分级见 [DATA_VALIDATION_2026-10-27.md](DATA_VALIDATION_2026-10-27.md)；用户已确认 WestSahara 缺数据、无正式结果，正式范围为 49 国。旧 GPKG 提取表已被采纳为永久**重建版设施坐标输入**，不等于原始 OSM 文件或修订版医疗结果。详细算法、代码范围、输入层级和输出格式见 [RECALCULATION_CHECKLIST.md](RECALCULATION_CHECKLIST.md) 的 C00–C16。
 
 统一填写规则：每项的“验证结果”应填 `通过 / 仅文字错误 / 口径错误需重算 / 数据不足 / 不适用`，附证据文件、运行 ID、代码提交、输入哈希、样本量、数值及差异；不能只写“已检查”。**本文件不启动任何新科学运算。**
 
@@ -129,3 +129,5 @@
 4. 每项填完“验证结果”后，登记 `source file + SHA-256 + code commit + config + run_id + n countries/n edges/n OD/n people + formula + output path`；最后执行 03、09 的全稿数值一致性复核。结果大表用 Parquet/GeoParquet，小型可引用汇总用 CSV；GPKG 仅用于需要 GIS 互操作的空间交付。
 
 **当前总状态**：11/11 项验证结果待填；已找到若干候选输入与旧结果，但没有一项因“文件存在”而自动勾选完成。
+
+**远程工程准备（非审稿结果）**：cx3 SSH 复用会话已连通；首批 Kenya 8 个输入以 [manifest](kenya_input_manifest_2026-10-27.json) 在本地及远端双重哈希 `PASS`，远端工程测试 `8 passed`。仅完成输入传输/环境检查，不改变上面的 11/11 待填状态；G0 道路劣化模型定义和 G1 共享图边/人口/OD 口径仍需放行，正式 PBS 科学任务未启动。详情见 [远程执行计划](REMOTE_RECALC_EXECUTION_PLAN.md)。

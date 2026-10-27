@@ -38,3 +38,9 @@
 **当前状态**：只完成静态输入/代码审计和此运行计划；G0 方法决策、G1 共享中间层、科学单元测试及远程 preflight/批量作业均未放行。新增明确 P0：投稿公式原始研究的 `T` 单位为天，当前 `1/12` 无系数换算；MGD 是无量纲 dust ratio 而非 0.5 m 深度，见 [MODEL_GATE_FINDINGS_2026-10-27.md](MODEL_GATE_FINDINGS_2026-10-27.md)。
 
 2026-10-27 本机网络预检：`ssh cx3` 在 SSH 密钥交换阶段即被关闭，未到密码提示；本机 `login.cx3.hpc.ic.ac.uk` 经当前隧道 DNS 解析到 `100.64.1.3`，Imperial Cisco 客户端未连接。已打开交互终端供用户自行输入命令/密码，但须先恢复可用网络／学校 Unified Access；不得猜测备用主机或把密码写入仓库。`python -m pytest -q` 旧套件仅 1 个占位测试通过；新增文件清单哈希验证单测另行记录，**不能**当作科学模型放行。
+
+### 2026-10-27 cx3 工程预检续记（取代上段的“未连接”状态）
+
+用户已在自己的终端建立复用 SSH 会话；自动化只使用本机临时 ControlMaster socket，**没有收集或保存密码**。远端是 `login-bi.cx3.hpc.ic.ac.uk`，账号 `yl2425`。PBS Pro `/opt/pbs/bin/qsub` 可用；非交互命令须先 `bash -lc` 加载环境模块。已确认 `geopandas/0.14.2-foss-2023a`、`xarray/2023.9.0-gfbf-2023a`、`python-igraph/0.11.4-foss-2023a`、`Arrow/16.1.0-gfbf-2023b` 和 Python 3.11 组合；pilot venv 补装 `rasterio==1.3.10`，NetCDF 后端单独检查。远端有 `tools/prod` 下的 `p7zip/17.04-GCCcore-12.3.0`，Kenya RAR 能列出 `.shp/.dbf/.shx/.prj/.cpg`；这只是档案可读性，不是路段口径验证。
+
+工程 pilot 隔离根目录：`/rds/general/user/yl2425/ephemeral/africa_pavement_recalc/pilot-20261027-e3bd600/`。代码按 Git 提交 `e3bd600` 的 archive 部署，随后单独同步未提交的元数据抽检脚本；必须在实际科学运行前重新冻结单一 Git 提交。首批 Kenya **8 个**输入文件共 **398,876,426 B** 从 iCloud 以一份 `--files-from` 清单批量 `rsync` 至 `incoming/`，本地和远端 `hpc.verify_manifest` 均报 `PASS`，见 [kenya_input_manifest_2026-10-27.json](kenya_input_manifest_2026-10-27.json)。远端仓库测试 `8 passed`，只验证文件清单工具等工程行为，不覆盖 HDM/图/医疗模型。**没有提交 PBS 科学作业或产出正式审稿数值**；G0/G1 未放行。后续记录元数据抽检、微型科学测试、一国计算节点 pilot，失败时不自动放行批量数组。

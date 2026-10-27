@@ -1,0 +1,25 @@
+#!/bin/bash -l
+#PBS -l select=1:ncpus=2:mem=8gb
+#PBS -l walltime=00:30:00
+#PBS -N road_ke_input
+
+# Engineering-only pilot: no HDM, graph, OD, or healthcare calculation.
+set -euo pipefail
+: "${PILOT_ROOT:?PILOT_ROOT is required}"
+cd "$PILOT_ROOT/code"
+
+module load geopandas/0.14.2-foss-2023a \
+  xarray/2023.9.0-gfbf-2023a \
+  python-igraph/0.11.4-foss-2023a \
+  Arrow/16.1.0-gfbf-2023b
+
+PYTHON="$PILOT_ROOT/venv/bin/python"
+"$PYTHON" -m hpc.verify_manifest \
+  --manifest audit/kenya_input_manifest_2026-10-27.json \
+  --root "$PILOT_ROOT/incoming"
+"$PYTHON" -m pytest -q
+"$PYTHON" -m hpc.inspect_kenya_pilot_inputs \
+  --root "$PILOT_ROOT/incoming" \
+  --output "$PILOT_ROOT/results/kenya_input_metadata_qc.json"
+
+echo "ENGINEERING_INPUT_PILOT_PASS job=${PBS_JOBID:-unknown}"
