@@ -1,0 +1,37 @@
+#!/bin/bash -l
+#PBS -l select=1:ncpus=4:mem=48gb
+#PBS -l walltime=04:00:00
+#PBS -N road_ke_graphqa
+
+# Engineering-only QA of a corrected-ID Kenya graph build. This does not
+# compute or approve any reviewer-facing scientific metric.
+set -euo pipefail
+: "${AUDIT_ROOT:?}"
+: "${SOURCE_RAR:?}"
+: "${ROAD_SHP:?}"
+: "${SPEED_CSV:?}"
+: "${PYTHON_BIN:?}"
+: "${CODE_COMMIT:?}"
+: "${EXPECTED_SOURCE_SHA256:?}"
+: "${EXPECTED_SPEED_SHA256:?}"
+
+cd "$AUDIT_ROOT/code"
+module load geopandas/0.14.2-foss-2023a \
+  xarray/2023.9.0-gfbf-2023a \
+  python-igraph/0.11.4-foss-2023a \
+  Arrow/16.1.0-gfbf-2023b
+
+test -s "$SOURCE_RAR"
+test -s "$ROAD_SHP"
+test -s "$SPEED_CSV"
+test "$(sha256sum "$SOURCE_RAR" | cut -d ' ' -f1)" = "$EXPECTED_SOURCE_SHA256"
+test "$(sha256sum "$SPEED_CSV" | cut -d ' ' -f1)" = "$EXPECTED_SPEED_SHA256"
+
+"$PYTHON_BIN" -m hpc.qa_kenya_graph_build \
+  --shp "$ROAD_SHP" \
+  --speed "$SPEED_CSV" \
+  --source-rar "$SOURCE_RAR" \
+  --code-commit "$CODE_COMMIT" \
+  --output "$AUDIT_ROOT/results/kenya_graph_qa.json"
+
+echo "KENYA_GRAPH_ENGINEERING_QA_FINISHED job=${PBS_JOBID:-unknown}"
