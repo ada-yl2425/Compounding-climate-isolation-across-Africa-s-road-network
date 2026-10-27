@@ -13,7 +13,12 @@
 | 通行率 `r` | 主文 Eq.4、Eq.8 与代码一致：速度先乘 `r`，极端图权再除 `1-p_block=r`。若同一概率代表同一机制，净效应为 `1/r²` | **双次应用是确定的，是否不合理属待决模型语义**。须说明两项是否代表独立机制；微型例 `L=10 km,V_base=60 km/h,r=.5`：一重为 0.3333 h、现实现为 0.6667 h。决定后统一各图／医疗／干预代码与 SI |
 | 平行边 | 图构造按最小正常权重把相同端点的物理路段合成一条 `nx.Graph` 边；可能丢失极端条件下更快的替代路段，且替换时有边元数据未同步更新 | 用 A(`w0=1,w1=100`) 与 B(`w0=2,w1=3`) 双平行边 fixture；选定保留物理多边还是显式做同 OD 双情景映射，并验证 `canonical_edge_id,length_km` |
 | 样本与人口回退 | 旧非洲城市档有 84 节点，去 ESH 是 83；医疗代码在栅格失败时可把每节点人口设为 1 | 正式国别/OD 排 ESH，另决定其路段是否允许作过境；输入缺失必须 fail closed，人口不能用 1 虚构。人口分母守恒需单测 |
+| 地形变量实际进入速度 | Kenya Figshare RAR 经 cx3 解压抽检：504,366 条 LineString，EPSG:3857，属性仅 `ID,Rd_length,Surface,Start_pt,End_pt`，**无** `slope_deg` 或 `curvature_deg_km`；投稿 `compute_road_speed.py:297-300` 对缺列补 `0.0`。旧 `Kenya_road_{0,8,12,16}` 速度 CSV 的长度和经纬中心点与该 RAR 按投稿投影算法重建的值逐项精确吻合（长度误差约 1e-11 km），强烈支持旧速度表使用同一几何和同一 ID 规则 | 若投稿正式运行确实直接读取此 RAR，则 Kenya 速度的坡度/曲率项就是零；但仍需核旧运行是否曾在读取前为相同几何增加过属性，不能仅凭汇总结果证明全 49 国情形。要重建则须先确定坡度单位/DEM 来源，并从道路几何算曲率；全球覆盖且无单位标签的归档坡度 TIFF 不能直接代替已验证字段 |
 
 原始路径：`data_procession/compute_road_speed.py`、`data_procession/future_road_speed.py`、`result1/network_pipeline.py`、`result1/run_africa_layer.py`、`data_procession/compute_health_accessibility.py`；审稿原文及输入见 [REVIEWER_RECALCULATION_CHECKLIST.md](REVIEWER_RECALCULATION_CHECKLIST.md)。Paterson 原研究 PDF 已由官方 TRB 站点文本核对；它记录的是投稿公式的原始经验模型，并不自动证明投稿应将其称作哪一版 HDM-4，须再核对所引手册版本。
 
 **G0 尚未 PASS**：这些是已找到的冲突及明确待决问题，不是已经选择的修正模型。不能启动正式 cx3 科学数组或将旧结果标为验证通过。
+
+cx3 工程证据：Kenya RAR schema 作业 `4479850.pbs-7`，`Exit_status=0`；结构报告 `/rds/general/user/yl2425/ephemeral/africa_pavement_recalc/pilot-20261027-e3bd600/results/kenya_road_schema_qc.json`。此状态只证明该包可读与字段构成，不证明路网拓扑、原稿版本一致性或路段空间真实性。
+
+四路段 ID/几何抽样对齐报告：同目录 `results/kenya_road_alignment_samples.json`，SHA-256 `2eadeee70a1e188d2d150337f917d30a8fb10ea4c993b38115ffcc1678707401`。对照旧 iCloud `02_derived_checkpoints/legacy_reference/road_speed_cordex.zip` 内 `road_speed_cordex/Kenya_road_speed.csv` 的四行；此为历史数据血缘核查，不是新科学速度结果。
