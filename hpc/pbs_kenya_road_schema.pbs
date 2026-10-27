@@ -1,0 +1,25 @@
+#!/bin/bash -l
+#PBS -l select=1:ncpus=2:mem=8gb
+#PBS -l walltime=00:30:00
+#PBS -N road_ke_schema
+
+# Engineering-only archive/schema inspection; no scientific calculation.
+set -euo pipefail
+: "${PILOT_ROOT:?PILOT_ROOT is required}"
+cd "$PILOT_ROOT/code"
+
+module load tools/prod p7zip/17.04-GCCcore-12.3.0 \
+  geopandas/0.14.2-foss-2023a \
+  xarray/2023.9.0-gfbf-2023a \
+  python-igraph/0.11.4-foss-2023a \
+  Arrow/16.1.0-gfbf-2023b
+
+ARCHIVE="$PILOT_ROOT/incoming/01_sources/roads/FRST_figshare_29424107_v1/Kenya.rar"
+WORK="$PILOT_ROOT/work/kenya_road_schema_${PBS_JOBID%%.*}"
+mkdir -p "$WORK"
+7z x -y "$ARCHIVE" "-o$WORK" >/dev/null
+"$PILOT_ROOT/venv/bin/python" -m hpc.inspect_kenya_road_schema \
+  --shapefile "$WORK/Kenya/Kenya.shp" \
+  --output "$PILOT_ROOT/results/kenya_road_schema_qc.json"
+
+echo "ENGINEERING_ROAD_SCHEMA_PASS job=${PBS_JOBID:-unknown}"
