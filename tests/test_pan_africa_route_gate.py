@@ -7,6 +7,7 @@ import pandas as pd
 import pytest
 
 from hpc.pan_africa_route_gate import (
+    annotate_physical_path_exposure,
     classify_paper_pairs,
     crosswalk_graph_edges,
     validate_paper_od_nodes,
@@ -44,6 +45,11 @@ def test_scenario_specific_parallel_road_crosswalk_and_fixed_route():
     assert row["t_baseline_h"] == 1.25
     assert row["t_fixed_extreme_h"] == 5.25
     assert row["t_rerouted_extreme_h"] == 1.75
+    enriched = annotate_physical_path_exposure(pairs, table).iloc[0]
+    assert enriched["baseline_physical_length_km"] == 10.0
+    assert enriched["baseline_synthetic_length_km"] == 10.0
+    assert enriched["baseline_synthetic_normal_time_h"] == 0.25
+    assert enriched["baseline_physical_speed_reduction_pct"] == 80.0
 
 
 def test_crosswalk_rejects_stale_or_unmatched_speed():

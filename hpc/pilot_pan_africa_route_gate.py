@@ -21,6 +21,7 @@ import pandas as pd
 from scipy.spatial import cKDTree
 
 from hpc.pan_africa_route_gate import (
+    annotate_physical_path_exposure,
     classify_paper_pairs,
     crosswalk_graph_edges,
     validate_paper_od_nodes,
@@ -110,6 +111,7 @@ def run(args: argparse.Namespace) -> dict:
     name_to_id = pilot_nodes.set_index("name")["node_id"].to_dict()
     origins = [{"id": name_to_id[row["city_name"]], "node": row["snap_node"]} for row in snapped]
     pairs = classify_paper_pairs(decompose_od_routes(G0, G1, edge_table, origins), pilot_nodes)
+    pairs = annotate_physical_path_exposure(pairs, edge_table)
     expected = len(origins) * (len(origins) - 1) // 2
     if len(pairs) != expected:
         raise ValueError(f"Pilot OD pair count {len(pairs)} != {expected}")

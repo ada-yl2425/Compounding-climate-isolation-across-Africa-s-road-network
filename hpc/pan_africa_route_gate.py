@@ -155,3 +155,39 @@ def classify_paper_pairs(pairs: pd.DataFrame, nodes: pd.DataFrame) -> pd.DataFra
         result[f"{side}_type"] = result[col].map(lookup["type"])
     result["international"] = result["origin_country"] != result["destination_country"]
     return result
+
+
+def annotate_physical_path_exposure(pairs: pd.DataFrame, edges: pd.DataFrame) -> pd.DataFrame:
+    """Separate real-road exposure from unchanged synthetic border time."""
+    lookup = edges.set_index("road_id")
+    available_ids = set(lookup.index)
+    result = pairs.copy()
+    physical_lengths = []
+    synthetic_lengths = []
+    synthetic_normal_times = []
+    physical_speed_reductions = []
+    for ids in result["baseline_path_road_ids"]:
+        if not isinstance(ids, (list, tuple)):
+            physical_lengths.append(None)
+            synthetic_lengths.append(None)
+            synthetic_normal_times.append(None)
+            physical_speed_reductions.append(None)
+            continue
+        if not set(ids) <= available_ids:
+            raise ValueError("Baseline path references a road outside the crosswalk")
+        phys = lookup.loc[[rid for rid in ids if not bool(lookup.loc[rid, "synthetic"])]]
+        synth = lookup.loc[[rid for rid in ids if bool(lookup.loc[rid, "synthetic"])]]
+        physical_lengths.append(float(phys["length_km"].sum()))
+        synthetic_lengths.append(float(synth["length_km"].sum()))
+        synthetic_normal_times.append(float(synth["w0"].sum()))
+        if len(phys):
+            normal_speed = float(phys["length_km"].sum() / phys["w0"].sum())
+            extreme_speed = float(phys["length_km"].sum() / phys["w1"].sum())
+            physical_speed_reductions.append(100 * (1 - extreme_speed / normal_speed))
+        else:
+            physical_speed_reductions.append(None)
+    result["baseline_physical_length_km"] = physical_lengths
+    result["baseline_synthetic_length_km"] = synthetic_lengths
+    result["baseline_synthetic_normal_time_h"] = synthetic_normal_times
+    result["baseline_physical_speed_reduction_pct"] = physical_speed_reductions
+    return result
