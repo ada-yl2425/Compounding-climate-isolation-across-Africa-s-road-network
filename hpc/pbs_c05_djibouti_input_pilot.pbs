@@ -1,0 +1,19 @@
+#!/bin/bash -l
+#PBS -l select=1:ncpus=2:mem=8gb
+#PBS -l walltime=00:30:00
+#PBS -N c05_dji_input
+
+# Input-only C05 pilot: no road graph or healthcare travel-time computation.
+set -euo pipefail
+: "${C05_ROOT:?C05_ROOT is required}"
+
+module load geopandas/0.14.2-foss-2023a Arrow/16.1.0-gfbf-2023b
+PYTHON=/rds/general/user/yl2425/ephemeral/africa_pavement_recalc/pilot-20261027-e3bd600/venv/bin/python
+cd "$C05_ROOT/code"
+"$PYTHON" pilot_health_population_denominator.py \
+  --country Djibouti --iso3 DJI \
+  --population-tif "$C05_ROOT/inputs/dji_ppp_2020_UNadj_constrained.tif" \
+  --boundary-gpkg "$C05_ROOT/inputs/gadm41_DJI_2.gpkg" \
+  --facilities-csv "$C05_ROOT/inputs/health_facilities_from_legacy_gpkg.csv" \
+  --out-dir "$C05_ROOT/results"
+echo "C05_DJI_INPUT_PILOT_PASS job=${PBS_JOBID:-unknown}"
