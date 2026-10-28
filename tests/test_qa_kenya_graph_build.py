@@ -36,7 +36,7 @@ def test_audit_detects_collapsed_parallel_edge_table_staleness():
 def test_audit_accepts_matching_edge_table():
     normal, extreme, connectivity = nx.Graph(), nx.Graph(), nx.Graph()
     normal.add_edge(1, 2, road_id="first", weight=3.0)
-    extreme.add_edge(1, 2, weight=5.0)
+    extreme.add_edge(1, 2, road_id="first", weight=5.0)
     connectivity.add_edge(1, 2)
     table = pd.DataFrame([{"u": 1, "v": 2, "road_id": "first", "w0": 3.0, "w1": 5.0}])
     result = audit_graph(normal, extreme, connectivity, table, {"first"})

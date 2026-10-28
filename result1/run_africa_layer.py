@@ -101,6 +101,14 @@ FOLDER_TO_ISO = {
 def _merge_endpoints(pts_arr, same_pairs, threshold):
     N = len(pts_arr)
     parent = list(range(N))
+    group_size = [1] * N
+    # Prevent indirect union of the two endpoints of one physical road.
+    road_of_endpoint = {}
+    for road_index, (start, end) in enumerate(sorted(same_pairs)):
+        road_of_endpoint[start] = road_index
+        road_of_endpoint[end] = road_index
+    roads_in_group = [set([road_of_endpoint[i]]) if i in road_of_endpoint else set()
+                      for i in range(N)]
 
     def find(x):
         while parent[x] != x:
@@ -111,7 +119,14 @@ def _merge_endpoints(pts_arr, same_pairs, threshold):
     def union(a, b):
         a, b = find(a), find(b)
         if a != b:
+            if not roads_in_group[a].isdisjoint(roads_in_group[b]):
+                return
+            if group_size[a] < group_size[b]:
+                a, b = b, a
             parent[b] = a
+            group_size[a] += group_size[b]
+            roads_in_group[a].update(roads_in_group[b])
+            roads_in_group[b].clear()
 
     tree = cKDTree(pts_arr)
     for i, j in tree.query_pairs(threshold):
@@ -253,13 +268,11 @@ def build_country_graph(country, node_offset):
         w0 = lkm / V_n
         # V_extreme already includes the passability factor.
         w1 = lkm / V_e
-        if G0.has_edge(u, v):
-            if w0 < G0[u][v].get("weight", 1e9):
-                G0[u][v]["weight"] = w0
-                G1[u][v]["weight"] = w1
-        else:
-            G0.add_edge(u, v, weight=w0)
-            G1.add_edge(u, v, weight=w1)
+        # The two scenarios may route over different physical parallel roads.
+        if not G0.has_edge(u, v) or w0 < G0[u][v]["weight"]:
+            G0.add_edge(u, v, weight=w0, road_id=road_id)
+        if not G1.has_edge(u, v) or w1 < G1[u][v]["weight"]:
+            G1.add_edge(u, v, weight=w1, road_id=road_id)
 
     lons = np.array([c[0] for c in node_coords_global.values()])
     lats = np.array([c[1] for c in node_coords_global.values()])
@@ -359,8 +372,9 @@ def build_africa_graph(checkpoint_path: Path = CHECKPOINT_PATH, rebuild: bool = 
             * 111.0
         )
         w = dist_km / CROSS_BORDER_SPEED
-        G0_pan.add_edge(u, v, weight=w)
-        G1_pan.add_edge(u, v, weight=w)
+        synthetic_id = f"synthetic_border_{min(u, v)}_{max(u, v)}"
+        G0_pan.add_edge(u, v, weight=w, road_id=synthetic_id, synthetic=True)
+        G1_pan.add_edge(u, v, weight=w, road_id=synthetic_id, synthetic=True)
         n_cross += 1
 
     print(f"  New cross-border edges: {n_cross:,}")
