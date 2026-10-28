@@ -24,8 +24,8 @@ class _Tee(io.StringIO):
         return super().write(value)
 
 
-def parse_build_counts(log, route_edges):
-    """Derive parallel collapses from the builder's own per-feature counters."""
+def parse_build_counts(log, route_edges, physical_edges=None):
+    """Separate filtered roads, retained physical roads and route pairs."""
     filtered = re.search(r"Filtered segments:\s*([\d,]+)", log)
     completion = re.search(r"Fill=([\d,]+)\s+Skip=([\d,]+)", log)
     if not filtered or not completion:
@@ -34,7 +34,11 @@ def parse_build_counts(log, route_edges):
     fill_count = int(completion.group(1).replace(",", ""))
     skip_count = int(completion.group(2).replace(",", ""))
     candidates = filtered_count - skip_count
-    parallel_collapses = candidates - route_edges
+    if physical_edges is None:
+        physical_edges = candidates
+    if physical_edges != candidates:
+        raise ValueError("Physical edge table does not contain every valid road")
+    parallel_collapses = physical_edges - route_edges
     if parallel_collapses < 0:
         raise ValueError("Graph has more edges than non-skipped road candidates")
     return {
@@ -55,42 +59,58 @@ def sha256_file(path):
 
 
 def audit_graph(G0, G1, G_conn, edges, speed_ids):
-    """Compare the collapsed route graph with the materialized edge table."""
+    """Verify every physical road and each scenario's min-weight projection."""
     result = {
         "nodes": G0.number_of_nodes(),
         "route_edges": G0.number_of_edges(),
         "connectivity_edges": G_conn.number_of_edges(),
         "edge_table_rows": len(edges),
+        "parallel_physical_edges": len(edges) - G0.number_of_edges(),
+        "selfloop_physical_edges": int((edges.u == edges.v).sum()),
         "edge_table_duplicate_road_ids": int(edges.road_id.duplicated().sum()),
         "selected_road_id_missing_from_speed": 0,
         "normal_graph_table_road_id_mismatch": 0,
+        "extreme_graph_table_road_id_mismatch": 0,
         "normal_graph_table_weight_mismatch": 0,
         "extreme_graph_table_weight_mismatch": 0,
         "nonfinite_nonpositive_normal_weight": 0,
         "nonfinite_nonpositive_extreme_weight": 0,
     }
     for row in edges.itertuples(index=False):
-        normal = G0[row.u][row.v]
-        extreme = G1[row.u][row.v]
         result["selected_road_id_missing_from_speed"] += row.road_id not in speed_ids
-        result["normal_graph_table_road_id_mismatch"] += normal.get("road_id") != row.road_id
-        result["normal_graph_table_weight_mismatch"] += not math.isclose(
-            normal["weight"], row.w0, rel_tol=1e-10, abs_tol=1e-12
-        )
-        result["extreme_graph_table_weight_mismatch"] += not math.isclose(
-            extreme["weight"], row.w1, rel_tol=1e-10, abs_tol=1e-12
-        )
         result["nonfinite_nonpositive_normal_weight"] += not (
-            math.isfinite(normal["weight"]) and normal["weight"] > 0
+            math.isfinite(row.w0) and row.w0 > 0
         )
         result["nonfinite_nonpositive_extreme_weight"] += not (
-            math.isfinite(extreme["weight"]) and extreme["weight"] > 0
+            math.isfinite(row.w1) and row.w1 > 0
+        )
+    grouped = edges.assign(_a=edges[["u", "v"]].min(axis=1),
+                           _b=edges[["u", "v"]].max(axis=1)).groupby(["_a", "_b"], sort=False)
+    for (u, v), group in grouped:
+        normal = G0[u][v] if G0.has_edge(u, v) else {}
+        extreme = G1[u][v] if G1.has_edge(u, v) else {}
+        best_normal = group.loc[group.w0.idxmin()]
+        best_extreme = group.loc[group.w1.idxmin()]
+        result["normal_graph_table_road_id_mismatch"] += normal.get("road_id") != best_normal.road_id
+        result["extreme_graph_table_road_id_mismatch"] += extreme.get("road_id") != best_extreme.road_id
+        result["normal_graph_table_weight_mismatch"] += not math.isclose(
+            normal.get("weight", float("nan")), best_normal.w0, rel_tol=1e-10, abs_tol=1e-12
+        )
+        result["extreme_graph_table_weight_mismatch"] += not math.isclose(
+            extreme.get("weight", float("nan")), best_extreme.w1, rel_tol=1e-10, abs_tol=1e-12
         )
     result["edge_table_matches_route_graph"] = (
-        result["route_edges"] == result["edge_table_rows"]
+        result["route_edges"] == len(grouped)
+        and result["connectivity_edges"] == result["route_edges"]
+        and result["edge_table_duplicate_road_ids"] == 0
+        and result["selfloop_physical_edges"] == 0
+        and result["selected_road_id_missing_from_speed"] == 0
         and result["normal_graph_table_road_id_mismatch"] == 0
+        and result["extreme_graph_table_road_id_mismatch"] == 0
         and result["normal_graph_table_weight_mismatch"] == 0
         and result["extreme_graph_table_weight_mismatch"] == 0
+        and result["nonfinite_nonpositive_normal_weight"] == 0
+        and result["nonfinite_nonpositive_extreme_weight"] == 0
     )
     return result
 
@@ -110,7 +130,7 @@ def main():
     with contextlib.redirect_stdout(stream):
         G0, G1, G_conn, edges, _ = build_graphs_from_shp(args.shp, args.speed)
     result = audit_graph(G0, G1, G_conn, edges, speed_ids)
-    result.update(parse_build_counts(stream.getvalue(), G0.number_of_edges()))
+    result.update(parse_build_counts(stream.getvalue(), G0.number_of_edges(), len(edges)))
     result.update({
         "kind": "engineering_graph_build_qa_only",
         "country": "Kenya",

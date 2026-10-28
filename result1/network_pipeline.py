@@ -69,6 +69,16 @@ def fmt(x):
 def _merge_endpoints(pts_arr, same_pairs, threshold):
     N = len(pts_arr)
     parent = list(range(N))
+    group_size = [1] * N
+    # A line's endpoints must not meet in the same snapped component, even
+    # indirectly through other nearby endpoints. Such a merge loses the
+    # physical road as a self-loop. Keep the published snap distance unchanged.
+    road_of_endpoint = {}
+    for road_index, (start, end) in enumerate(sorted(same_pairs)):
+        road_of_endpoint[start] = road_index
+        road_of_endpoint[end] = road_index
+    roads_in_group = [set([road_of_endpoint[i]]) if i in road_of_endpoint else set()
+                      for i in range(N)]
 
     def find(x):
         while parent[x] != x:
@@ -79,7 +89,14 @@ def _merge_endpoints(pts_arr, same_pairs, threshold):
     def union(a, b):
         a_root, b_root = find(a), find(b)
         if a_root != b_root:
+            if not roads_in_group[a_root].isdisjoint(roads_in_group[b_root]):
+                return
+            if group_size[a_root] < group_size[b_root]:
+                a_root, b_root = b_root, a_root
             parent[b_root] = a_root
+            group_size[a_root] += group_size[b_root]
+            roads_in_group[a_root].update(roads_in_group[b_root])
+            roads_in_group[b_root].clear()
 
     tree = cKDTree(pts_arr)
     for i, j in tree.query_pairs(threshold):
@@ -195,6 +212,8 @@ def build_graphs_from_shp(shp_path, iri_path, surface_filter="unpaved"):
     compression_ratio = len(coords_list) / len(node_coords)
     print(f"  Nodes: {len(node_coords):,} (Compression ratio {compression_ratio:.1f}x)")
 
+    # Keep all physical road identities in df_edges. Graphs are separate
+    # minimum-travel-time projections for algorithms requiring simple graphs.
     G0 = nx.Graph()
     G1 = nx.Graph()
     G_conn = nx.Graph()
@@ -244,34 +263,31 @@ def build_graphs_from_shp(shp_path, iri_path, surface_filter="unpaved"):
             # V_extreme already includes the passability factor.
             w1 = lkm / V_e
 
-            if G0.has_edge(u, v):
-                if w0 < G0[u][v].get("weight", 1e9):
-                    G0[u][v].update(weight=w0, road_id=road_id)
-                    G1[u][v]["weight"] = w1
-            else:
+            if not G0.has_edge(u, v) or w0 < G0[u][v]["weight"]:
                 G0.add_edge(u, v, weight=w0, road_id=road_id, length_km=lkm)
-                G1.add_edge(u, v, weight=w1)
-                G_conn.add_edge(u, v)
-                ea.append(
-                    {
-                        "u": u,
-                        "v": v,
-                        "road_id": road_id,
-                        "w0": w0,
-                        "w1": w1,
-                        "p_block": pb,
-                        "passable": int(pb < BLOCK_PROB_THRESH),
-                        "delta_V_pct": dv,
-                        "length_km": lkm,
-                    }
-                )
+            if not G1.has_edge(u, v) or w1 < G1[u][v]["weight"]:
+                G1.add_edge(u, v, weight=w1, road_id=road_id, length_km=lkm)
+            G_conn.add_edge(u, v)
+            ea.append(
+                {
+                    "u": u,
+                    "v": v,
+                    "road_id": road_id,
+                    "w0": w0,
+                    "w1": w1,
+                    "p_block": pb,
+                    "passable": int(pb < BLOCK_PROB_THRESH),
+                    "delta_V_pct": dv,
+                    "length_km": lkm,
+                }
+            )
 
     df_edges = pd.DataFrame(ea)
     comps = list(nx.connected_components(G_conn))
     lcc_r = max(len(c) for c in comps) / G0.number_of_nodes()
     total = n_match + n_fill
 
-    print(f"\n  Nodes={G0.number_of_nodes():,}  Edges={G0.number_of_edges():,}")
+    print(f"\n  Nodes={G0.number_of_nodes():,}  Route edges={G0.number_of_edges():,}  Physical roads={len(df_edges):,}")
     print(f"  IRI Match={n_match / total * 100:.1f}%  Fill={n_fill:,}  Skip={n_skip:,}")
     print(f"  Components={len(comps)}  LCC Ratio={lcc_r:.1%}")
     return G0, G1, G_conn, df_edges, node_coords

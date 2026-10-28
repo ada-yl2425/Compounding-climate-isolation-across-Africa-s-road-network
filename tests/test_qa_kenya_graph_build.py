@@ -73,6 +73,40 @@ def test_real_builder_reports_stale_table_after_parallel_edge_update(tmp_path):
     result = audit_graph(normal, extreme, connectivity, table,
                          {"Kenya_road_0", "Kenya_road_1"})
     assert result["route_edges"] == 1
-    assert result["normal_graph_table_road_id_mismatch"] == 1
-    assert result["normal_graph_table_weight_mismatch"] == 1
-    assert result["extreme_graph_table_weight_mismatch"] == 1
+    assert result["edge_table_rows"] == 2
+    assert result["parallel_physical_edges"] == 1
+    assert result["edge_table_matches_route_graph"]
+    assert normal[0][1]["road_id"] == "Kenya_road_1"
+    assert extreme[0][1]["road_id"] == "Kenya_road_1"
+
+
+def test_parallel_projection_can_choose_different_road_in_each_scenario(tmp_path):
+    geopandas = pytest.importorskip("geopandas")
+    from shapely.geometry import LineString
+
+    from result1.network_pipeline import build_graphs_from_shp
+
+    roads = geopandas.GeoDataFrame(
+        {"Surface": ["unpaved", "unpaved"]},
+        geometry=[LineString([(10, 0), (10.02, 0)]),
+                  LineString([(10, 0), (10.02, 0.001), (10.02, 0)])],
+        crs="EPSG:4326",
+    )
+    shp = tmp_path / "Kenya.shp"
+    roads.to_file(shp)
+    speed = tmp_path / "Kenya_road_speed.csv"
+    with speed.open("w", newline="") as output:
+        writer = csv.DictWriter(output, fieldnames=(
+            "road_id", "V_normal", "V_extreme", "passable_rate_extreme"
+        ))
+        writer.writeheader()
+        writer.writerow({"road_id": "Kenya_road_0", "V_normal": 100,
+                         "V_extreme": 5, "passable_rate_extreme": 1})
+        writer.writerow({"road_id": "Kenya_road_1", "V_normal": 10,
+                         "V_extreme": 50, "passable_rate_extreme": 1})
+    normal, extreme, connectivity, table, _ = build_graphs_from_shp(shp, speed)
+    assert len(table) == 2
+    assert normal[0][1]["road_id"] == "Kenya_road_0"
+    assert extreme[0][1]["road_id"] == "Kenya_road_1"
+    assert audit_graph(normal, extreme, connectivity, table,
+                       {"Kenya_road_0", "Kenya_road_1"})["edge_table_matches_route_graph"]
