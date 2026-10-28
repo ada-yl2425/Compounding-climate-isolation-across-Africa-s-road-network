@@ -1,0 +1,36 @@
+#!/bin/bash -l
+#PBS -l select=1:ncpus=4:mem=48gb
+#PBS -l walltime=04:00:00
+#PBS -N road_c04_pilot
+
+set -euo pipefail
+: "${AUDIT_ROOT:?}"
+: "${ROAD_SHP:?}"
+: "${SPEED_CSV:?}"
+: "${CITIES_CSV:?}"
+: "${COUNTRY:?}"
+: "${PYTHON_BIN:?}"
+: "${CODE_COMMIT:?}"
+: "${EXPECTED_SHP_SHA256:?}"
+: "${EXPECTED_SPEED_SHA256:?}"
+: "${EXPECTED_CITIES_SHA256:?}"
+
+cd "$AUDIT_ROOT/code"
+module load geopandas/0.14.2-foss-2023a \
+  xarray/2023.9.0-gfbf-2023a \
+  python-igraph/0.11.4-foss-2023a \
+  Arrow/16.1.0-gfbf-2023b
+
+test "$(sha256sum "$ROAD_SHP" | cut -d ' ' -f1)" = "$EXPECTED_SHP_SHA256"
+test "$(sha256sum "$SPEED_CSV" | cut -d ' ' -f1)" = "$EXPECTED_SPEED_SHA256"
+test "$(sha256sum "$CITIES_CSV" | cut -d ' ' -f1)" = "$EXPECTED_CITIES_SHA256"
+
+"$PYTHON_BIN" -m hpc.pilot_route_decomposition \
+  --shp "$ROAD_SHP" \
+  --speed "$SPEED_CSV" \
+  --cities "$CITIES_CSV" \
+  --country "$COUNTRY" \
+  --code-commit "$CODE_COMMIT" \
+  --output-dir "$AUDIT_ROOT/results"
+
+echo "C04_ONE_COUNTRY_PILOT_FINISHED job=${PBS_JOBID:-unknown}"
