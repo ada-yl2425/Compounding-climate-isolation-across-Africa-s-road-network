@@ -1,6 +1,6 @@
 # Kenya 图拓扑工程闸门（2026-10-28）
 
-状态：小样本单测通过；Kenya 全图 QA `4490565.pbs-7` 已提交、结果待验。**未放行审稿指标或 49 国重算。**
+状态：Kenya 全图**工程输入/投影 QA PASS**；仅放行该国旧速度的 OD/效率/固定路线分解**试算**，**未放行审稿最终指标或 49 国重算**。
 
 ## 根因与最小修复
 
@@ -15,7 +15,9 @@
 - 本地全套：`81 passed, 6 skipped`；本地缺 geopandas 的小样本在 cx3 隔离目录补跑，`9 passed`，包括传递自环、平行线保留、两情景选择不同 `road_id`。
 - 泛非构建器另有 cx3 真实 GeoDataFrame 小样本 `2 passed`，验证传递自环保护与两情景可选择不同的平行物理道路；尚未跑泛非 49 国全图。
 - 远端代码快照：`/rds/general/user/yl2425/ephemeral/africa_pavement_recalc/graph-topology-fix-20261028/code/`；`network_pipeline.py` SHA-256 `7fb3117974ee7674dc1ad7a8c4925bf3fb65b87790ebf0405c44a9fb68725293`，QA SHA-256 `a2540049ca8ce488b9e23295031ad976951b1228595d6e86d6825883300a2d04`。
-- PBS `4490565.pbs-7` 只做 Kenya 图构建工程 QA，4 CPU/48 GB/4 小时，结果预期位于同一根目录 `results/kenya_graph_qa.json`。提交时状态为排队；旧排队 job `4490555` 已取消，以确保 QA 包含 G1 道路 ID 检查。输入源 RAR 与旧速度 CSV 在作业启动时核验 SHA-256。
+- PBS `4490565.pbs-7` 只做 Kenya 图构建工程 QA，4 CPU/48 GB/4 小时，`Exit_status=0`，PBS walltime `00:09:29`，峰值内存约 6.65 GB。远端结果 `/rds/general/user/yl2425/ephemeral/africa_pavement_recalc/graph-topology-fix-20261028/results/kenya_graph_qa.json`，SHA-256 `e45dc30e96aa7429c4706f3ea15409dfc669197a5f90a373bc28eebefd0df324`。旧排队 job `4490555` 已取消，以确保 QA 包含 G1 道路 ID 检查。输入源 RAR 与旧速度 CSV 在作业启动时核验 SHA-256。
+- iCloud 归档：`africa pavement/05_manifests/kenya_graph_topology_c06de40_20261028/`，包含 QC JSON 与 PBS stdout/stderr；本地 QC SHA-256 与远端相同。iCloud 本地路径有文件，但还未独立从云端重新下载验证。
+- 全图 QA：筛后未铺装道路 **358,791**，物理边表 **358,791** 唯一 `road_id`；**0** 自环/几何跳过、**0** 速度缺失/默认填充、**0** G0/G1 路 ID 错配、**0** G0/G1 权重错配、**0** 非有限/非正权重。情景简单图各 **133,309** 个端点对，**98,457** 节点；有 **225,482** 条物理道路与其他路共享端点对（未丢弃，仍在物理表）。相比旧实现的 55,055 节点 / 54,186 图边，拓扑规模明显改变，应作为方法敏感性和阈值口径审阅，不视为与旧论文结果同一拓扑。
 
 ## 下游兼容性与待决口径
 
@@ -28,4 +30,4 @@
 | `percolation_analysis` | 当前 `(u,v)` 字典使平行道路互相覆盖，一次 `remove_edge` 又移除整个端点对，故不能直接用于按“道路边数”定义的渗流或干预。需先重构物理边失效及预算口径。 |
 | `spatial_clustering`、`save_critical_roads` | 前者将端点对 BC/桥标记重复赋给平行道路；后者只保存 G0 投影中的一条道路。若报告物理道路瓶颈，必须先定义映射。 |
 
-因此 Kenya 图 QA 通过仍只是图输入/投影一致性证据，**不是 C03 瓶颈、渗流或干预模型的放行条件**。正式重算至少还需全图输入验收、上述物理道路方法选择及相应测试。
+因此 Kenya 图 QA 通过仍只是图输入/投影一致性证据。**GO：Kenya 旧速度的 OD、网络效率及锁定物理道路 ID 的固定路线分解工程试算；NO-GO：C10–C12 瓶颈、渗流、干预恢复以及所有正式审稿结论。**后者至少还需物理道路失效/桥/预算口径、更新后的速度数据、对应测试与全图输入验收。
