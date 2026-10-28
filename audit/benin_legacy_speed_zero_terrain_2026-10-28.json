@@ -1,0 +1,23 @@
+{
+  "country": "Benin",
+  "sample_count": 105,
+  "sample_road_ids_first_10": [
+    "Benin_road_5",
+    "Benin_road_6",
+    "Benin_road_8",
+    "Benin_road_12",
+    "Benin_road_13",
+    "Benin_road_14",
+    "Benin_road_15",
+    "Benin_road_16",
+    "Benin_road_17",
+    "Benin_road_18"
+  ],
+  "max_abs_iri_normal": 4.513128326166793e-06,
+  "max_abs_iri_extreme": 5.2481055945463595e-06,
+  "median_abs_iri_normal": 2.842756986254358e-06,
+  "median_abs_iri_extreme": 2.8548501074254773e-06,
+  "matches_zero_terrain_at_1e_5": true,
+  "old_precip_conversion": "fixed_30_day_month_forensic_only",
+  "caveat": "This tests archived IRI against zero terrain at sample centroids; it cannot recover a missing historical staging table or endorse zero-terrain science."
+}

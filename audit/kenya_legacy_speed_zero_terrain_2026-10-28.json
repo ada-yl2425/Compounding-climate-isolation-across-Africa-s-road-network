@@ -1,0 +1,23 @@
+{
+  "country": "Kenya",
+  "sample_count": 411,
+  "sample_road_ids_first_10": [
+    "Kenya_road_0",
+    "Kenya_road_8",
+    "Kenya_road_12",
+    "Kenya_road_16",
+    "Kenya_road_17",
+    "Kenya_road_19",
+    "Kenya_road_21",
+    "Kenya_road_22",
+    "Kenya_road_23",
+    "Kenya_road_25"
+  ],
+  "max_abs_iri_normal": 5.421206399347511e-06,
+  "max_abs_iri_extreme": 5.790026172292073e-06,
+  "median_abs_iri_normal": 2.8410127921318917e-06,
+  "median_abs_iri_extreme": 2.4961497402387067e-06,
+  "matches_zero_terrain_at_1e_5": true,
+  "old_precip_conversion": "fixed_30_day_month_forensic_only",
+  "caveat": "This tests archived IRI against zero terrain at sample centroids; it cannot recover a missing historical staging table or endorse zero-terrain science."
+}

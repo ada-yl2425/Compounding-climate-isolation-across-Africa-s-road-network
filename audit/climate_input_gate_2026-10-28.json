@@ -1,0 +1,627 @@
+{
+  "status": "PASS",
+  "scope": "paper_baseline_future_main_and_si_s8_16_netcdf",
+  "files": [
+    {
+      "file": "pr_AFR-44_MPI-M-MPI-ESM-LR_rcp45_r1i1p1_SMHI-RCA4_v1_mon_201101-202012.nc",
+      "status": "PASS",
+      "errors": [],
+      "bytes": 10896857,
+      "sha256": "2dc45ef9f0cc02cf4a278bae626e0407c5695623063fb430ffe4c6d9160aa1b8",
+      "dimensions": {
+        "time": 120,
+        "rlat": 201,
+        "rlon": 194,
+        "bnds": 2
+      },
+      "calendar": "proleptic_gregorian",
+      "time_bounds_name": "time_bnds",
+      "variable_units": "kg m-2 s-1",
+      "attributes": {
+        "CORDEX_domain": "AFR-44",
+        "model_id": "SMHI-RCA4",
+        "driving_model_id": "MPI-M-MPI-ESM-LR",
+        "experiment_id": "rcp45",
+        "frequency": "mon"
+      },
+      "first_month": [
+        2011,
+        1
+      ],
+      "last_month": [
+        2020,
+        12
+      ],
+      "month_count": 120,
+      "month_duration_days": [
+        28,
+        29,
+        30,
+        31
+      ],
+      "purpose": "baseline"
+    },
+    {
+      "file": "mrso_AFR-44_MPI-M-MPI-ESM-LR_rcp45_r1i1p1_SMHI-RCA4_v1_mon_201101-202012.nc",
+      "status": "PASS",
+      "errors": [],
+      "bytes": 6012259,
+      "sha256": "aea258a05572fca93fae82582fd7296ad407ca282c746d1d19467a06a4e8e580",
+      "dimensions": {
+        "time": 120,
+        "rlat": 201,
+        "rlon": 194,
+        "bnds": 2
+      },
+      "calendar": "proleptic_gregorian",
+      "time_bounds_name": "time_bnds",
+      "variable_units": "kg m-2",
+      "attributes": {
+        "CORDEX_domain": "AFR-44",
+        "model_id": "SMHI-RCA4",
+        "driving_model_id": "MPI-M-MPI-ESM-LR",
+        "experiment_id": "rcp45",
+        "frequency": "mon"
+      },
+      "first_month": [
+        2011,
+        1
+      ],
+      "last_month": [
+        2020,
+        12
+      ],
+      "month_count": 120,
+      "month_duration_days": [
+        28,
+        29,
+        30,
+        31
+      ],
+      "purpose": "baseline"
+    },
+    {
+      "file": "pr_AFR-44_MPI-M-MPI-ESM-LR_rcp45_r1i1p1_SMHI-RCA4_v1_mon_204101-205012.nc",
+      "status": "PASS",
+      "errors": [],
+      "bytes": 10844830,
+      "sha256": "fa4ac98fb0a1bc592ced5237a1757d48bd68b4376beb340941d12ab2f1f8b391",
+      "dimensions": {
+        "time": 120,
+        "rlat": 201,
+        "rlon": 194,
+        "bnds": 2
+      },
+      "calendar": "proleptic_gregorian",
+      "time_bounds_name": "time_bnds",
+      "variable_units": "kg m-2 s-1",
+      "attributes": {
+        "CORDEX_domain": "AFR-44",
+        "model_id": "SMHI-RCA4",
+        "driving_model_id": "MPI-M-MPI-ESM-LR",
+        "experiment_id": "rcp45",
+        "frequency": "mon"
+      },
+      "first_month": [
+        2041,
+        1
+      ],
+      "last_month": [
+        2050,
+        12
+      ],
+      "month_count": 120,
+      "month_duration_days": [
+        28,
+        29,
+        30,
+        31
+      ],
+      "purpose": "future"
+    },
+    {
+      "file": "mrso_AFR-44_MPI-M-MPI-ESM-LR_rcp45_r1i1p1_SMHI-RCA4_v1_mon_204101-205012.nc",
+      "status": "PASS",
+      "errors": [],
+      "bytes": 6001485,
+      "sha256": "1934cee6887c2803009596cc2e879887f3dc6f49116516fec014082366bc651c",
+      "dimensions": {
+        "time": 120,
+        "rlat": 201,
+        "rlon": 194,
+        "bnds": 2
+      },
+      "calendar": "proleptic_gregorian",
+      "time_bounds_name": "time_bnds",
+      "variable_units": "kg m-2",
+      "attributes": {
+        "CORDEX_domain": "AFR-44",
+        "model_id": "SMHI-RCA4",
+        "driving_model_id": "MPI-M-MPI-ESM-LR",
+        "experiment_id": "rcp45",
+        "frequency": "mon"
+      },
+      "first_month": [
+        2041,
+        1
+      ],
+      "last_month": [
+        2050,
+        12
+      ],
+      "month_count": 120,
+      "month_duration_days": [
+        28,
+        29,
+        30,
+        31
+      ],
+      "purpose": "future"
+    },
+    {
+      "file": "pr_AFR-44_MPI-M-MPI-ESM-LR_rcp45_r1i1p1_SMHI-RCA4_v1_mon_206101-207012.nc",
+      "status": "PASS",
+      "errors": [],
+      "bytes": 10808201,
+      "sha256": "477f325da6941027fd988e8908a96b82a52d6378f2cb2ea348d67f5ff7bda73e",
+      "dimensions": {
+        "time": 120,
+        "rlat": 201,
+        "rlon": 194,
+        "bnds": 2
+      },
+      "calendar": "proleptic_gregorian",
+      "time_bounds_name": "time_bnds",
+      "variable_units": "kg m-2 s-1",
+      "attributes": {
+        "CORDEX_domain": "AFR-44",
+        "model_id": "SMHI-RCA4",
+        "driving_model_id": "MPI-M-MPI-ESM-LR",
+        "experiment_id": "rcp45",
+        "frequency": "mon"
+      },
+      "first_month": [
+        2061,
+        1
+      ],
+      "last_month": [
+        2070,
+        12
+      ],
+      "month_count": 120,
+      "month_duration_days": [
+        28,
+        29,
+        30,
+        31
+      ],
+      "purpose": "future"
+    },
+    {
+      "file": "mrso_AFR-44_MPI-M-MPI-ESM-LR_rcp45_r1i1p1_SMHI-RCA4_v1_mon_206101-207012.nc",
+      "status": "PASS",
+      "errors": [],
+      "bytes": 5970991,
+      "sha256": "326f741e208b6549009b2862e363a548ad0efdcd4fd043130e462545fee93c61",
+      "dimensions": {
+        "time": 120,
+        "rlat": 201,
+        "rlon": 194,
+        "bnds": 2
+      },
+      "calendar": "proleptic_gregorian",
+      "time_bounds_name": "time_bnds",
+      "variable_units": "kg m-2",
+      "attributes": {
+        "CORDEX_domain": "AFR-44",
+        "model_id": "SMHI-RCA4",
+        "driving_model_id": "MPI-M-MPI-ESM-LR",
+        "experiment_id": "rcp45",
+        "frequency": "mon"
+      },
+      "first_month": [
+        2061,
+        1
+      ],
+      "last_month": [
+        2070,
+        12
+      ],
+      "month_count": 120,
+      "month_duration_days": [
+        28,
+        29,
+        30,
+        31
+      ],
+      "purpose": "future"
+    },
+    {
+      "file": "pr_AFR-44_MPI-M-MPI-ESM-LR_rcp45_r1i1p1_SMHI-RCA4_v1_mon_208101-209012.nc",
+      "status": "PASS",
+      "errors": [],
+      "bytes": 10781131,
+      "sha256": "ce6b4b5dff3f618d790c30158c24109a1c2e06b1175004cbe119f20de2ae01d7",
+      "dimensions": {
+        "time": 120,
+        "rlat": 201,
+        "rlon": 194,
+        "bnds": 2
+      },
+      "calendar": "proleptic_gregorian",
+      "time_bounds_name": "time_bnds",
+      "variable_units": "kg m-2 s-1",
+      "attributes": {
+        "CORDEX_domain": "AFR-44",
+        "model_id": "SMHI-RCA4",
+        "driving_model_id": "MPI-M-MPI-ESM-LR",
+        "experiment_id": "rcp45",
+        "frequency": "mon"
+      },
+      "first_month": [
+        2081,
+        1
+      ],
+      "last_month": [
+        2090,
+        12
+      ],
+      "month_count": 120,
+      "month_duration_days": [
+        28,
+        29,
+        30,
+        31
+      ],
+      "purpose": "future"
+    },
+    {
+      "file": "mrso_AFR-44_MPI-M-MPI-ESM-LR_rcp45_r1i1p1_SMHI-RCA4_v1_mon_208101-209012.nc",
+      "status": "PASS",
+      "errors": [],
+      "bytes": 5963185,
+      "sha256": "6920fb5b8f3070b0d3b4031b6a41440993666e24ca1e5852bfcba8af2466ee0d",
+      "dimensions": {
+        "time": 120,
+        "rlat": 201,
+        "rlon": 194,
+        "bnds": 2
+      },
+      "calendar": "proleptic_gregorian",
+      "time_bounds_name": "time_bnds",
+      "variable_units": "kg m-2",
+      "attributes": {
+        "CORDEX_domain": "AFR-44",
+        "model_id": "SMHI-RCA4",
+        "driving_model_id": "MPI-M-MPI-ESM-LR",
+        "experiment_id": "rcp45",
+        "frequency": "mon"
+      },
+      "first_month": [
+        2081,
+        1
+      ],
+      "last_month": [
+        2090,
+        12
+      ],
+      "month_count": 120,
+      "month_duration_days": [
+        28,
+        29,
+        30,
+        31
+      ],
+      "purpose": "future"
+    },
+    {
+      "file": "pr_AFR-44_MIROC-MIROC5_rcp45_r1i1p1_SMHI-RCA4_v1_mon_204101-205012.nc",
+      "status": "PASS",
+      "errors": [],
+      "bytes": 10982416,
+      "sha256": "7a6066a904fe3571d150b278341ceee093441c384bdc0426d26cf2df053f2a05",
+      "dimensions": {
+        "time": 120,
+        "rlat": 201,
+        "rlon": 194,
+        "bnds": 2
+      },
+      "calendar": "365_day",
+      "time_bounds_name": "time_bnds",
+      "variable_units": "kg m-2 s-1",
+      "attributes": {
+        "CORDEX_domain": "AFR-44",
+        "model_id": "SMHI-RCA4",
+        "driving_model_id": "MIROC-MIROC5",
+        "experiment_id": "rcp45",
+        "frequency": "mon"
+      },
+      "first_month": [
+        2041,
+        1
+      ],
+      "last_month": [
+        2050,
+        12
+      ],
+      "month_count": 120,
+      "month_duration_days": [
+        28,
+        30,
+        31
+      ],
+      "purpose": "future"
+    },
+    {
+      "file": "mrso_AFR-44_MIROC-MIROC5_rcp45_r1i1p1_SMHI-RCA4_v1_mon_204101-205012.nc",
+      "status": "PASS",
+      "errors": [],
+      "bytes": 6096551,
+      "sha256": "ff3e711ac09d28afbc956ae3edc7064423e99fbfc5ec620aee0aba926436f494",
+      "dimensions": {
+        "time": 120,
+        "rlat": 201,
+        "rlon": 194,
+        "bnds": 2
+      },
+      "calendar": "365_day",
+      "time_bounds_name": "time_bnds",
+      "variable_units": "kg m-2",
+      "attributes": {
+        "CORDEX_domain": "AFR-44",
+        "model_id": "SMHI-RCA4",
+        "driving_model_id": "MIROC-MIROC5",
+        "experiment_id": "rcp45",
+        "frequency": "mon"
+      },
+      "first_month": [
+        2041,
+        1
+      ],
+      "last_month": [
+        2050,
+        12
+      ],
+      "month_count": 120,
+      "month_duration_days": [
+        28,
+        30,
+        31
+      ],
+      "purpose": "future"
+    },
+    {
+      "file": "pr_AFR-44_MIROC-MIROC5_rcp45_r1i1p1_SMHI-RCA4_v1_mon_206101-207012.nc",
+      "status": "PASS",
+      "errors": [],
+      "bytes": 10930005,
+      "sha256": "d8e1b5823741f84fcdb5eb71b59563ba016de2f350abaf72e247492916577b06",
+      "dimensions": {
+        "time": 120,
+        "rlat": 201,
+        "rlon": 194,
+        "bnds": 2
+      },
+      "calendar": "365_day",
+      "time_bounds_name": "time_bnds",
+      "variable_units": "kg m-2 s-1",
+      "attributes": {
+        "CORDEX_domain": "AFR-44",
+        "model_id": "SMHI-RCA4",
+        "driving_model_id": "MIROC-MIROC5",
+        "experiment_id": "rcp45",
+        "frequency": "mon"
+      },
+      "first_month": [
+        2061,
+        1
+      ],
+      "last_month": [
+        2070,
+        12
+      ],
+      "month_count": 120,
+      "month_duration_days": [
+        28,
+        30,
+        31
+      ],
+      "purpose": "future"
+    },
+    {
+      "file": "mrso_AFR-44_MIROC-MIROC5_rcp45_r1i1p1_SMHI-RCA4_v1_mon_206101-207012.nc",
+      "status": "PASS",
+      "errors": [],
+      "bytes": 6103837,
+      "sha256": "a40b0638df46213350482e1ceeabddfe6d94b9b9d0e0c360d16507eacf5e9e47",
+      "dimensions": {
+        "time": 120,
+        "rlat": 201,
+        "rlon": 194,
+        "bnds": 2
+      },
+      "calendar": "365_day",
+      "time_bounds_name": "time_bnds",
+      "variable_units": "kg m-2",
+      "attributes": {
+        "CORDEX_domain": "AFR-44",
+        "model_id": "SMHI-RCA4",
+        "driving_model_id": "MIROC-MIROC5",
+        "experiment_id": "rcp45",
+        "frequency": "mon"
+      },
+      "first_month": [
+        2061,
+        1
+      ],
+      "last_month": [
+        2070,
+        12
+      ],
+      "month_count": 120,
+      "month_duration_days": [
+        28,
+        30,
+        31
+      ],
+      "purpose": "future"
+    },
+    {
+      "file": "pr_AFR-44_MIROC-MIROC5_rcp45_r1i1p1_SMHI-RCA4_v1_mon_208101-209012.nc",
+      "status": "PASS",
+      "errors": [],
+      "bytes": 10968466,
+      "sha256": "b558a40fab3543764ded952775d4b73796eebf1723c257bf7e43f6a380a55dc5",
+      "dimensions": {
+        "time": 120,
+        "rlat": 201,
+        "rlon": 194,
+        "bnds": 2
+      },
+      "calendar": "365_day",
+      "time_bounds_name": "time_bnds",
+      "variable_units": "kg m-2 s-1",
+      "attributes": {
+        "CORDEX_domain": "AFR-44",
+        "model_id": "SMHI-RCA4",
+        "driving_model_id": "MIROC-MIROC5",
+        "experiment_id": "rcp45",
+        "frequency": "mon"
+      },
+      "first_month": [
+        2081,
+        1
+      ],
+      "last_month": [
+        2090,
+        12
+      ],
+      "month_count": 120,
+      "month_duration_days": [
+        28,
+        30,
+        31
+      ],
+      "purpose": "future"
+    },
+    {
+      "file": "mrso_AFR-44_MIROC-MIROC5_rcp45_r1i1p1_SMHI-RCA4_v1_mon_208101-209012.nc",
+      "status": "PASS",
+      "errors": [],
+      "bytes": 6098683,
+      "sha256": "4b848f574db84105e784172d3cdf0d26d122e37caa9940ec3d1ec98a2a652bd2",
+      "dimensions": {
+        "time": 120,
+        "rlat": 201,
+        "rlon": 194,
+        "bnds": 2
+      },
+      "calendar": "365_day",
+      "time_bounds_name": "time_bnds",
+      "variable_units": "kg m-2",
+      "attributes": {
+        "CORDEX_domain": "AFR-44",
+        "model_id": "SMHI-RCA4",
+        "driving_model_id": "MIROC-MIROC5",
+        "experiment_id": "rcp45",
+        "frequency": "mon"
+      },
+      "first_month": [
+        2081,
+        1
+      ],
+      "last_month": [
+        2090,
+        12
+      ],
+      "month_count": 120,
+      "month_duration_days": [
+        28,
+        30,
+        31
+      ],
+      "purpose": "future"
+    },
+    {
+      "file": "pr_AFR-44_MPI-M-MPI-ESM-LR_rcp85_r1i1p1_SMHI-RCA4_v1_mon_208101-209012.nc",
+      "status": "PASS",
+      "errors": [],
+      "bytes": 10664341,
+      "sha256": "f2e75074bad8636e05ec123c6a6cb6683dceb2b320c508d84ff596c88eb3f4a9",
+      "dimensions": {
+        "time": 120,
+        "rlat": 201,
+        "rlon": 194,
+        "bnds": 2
+      },
+      "calendar": "proleptic_gregorian",
+      "time_bounds_name": "time_bnds",
+      "variable_units": "kg m-2 s-1",
+      "attributes": {
+        "CORDEX_domain": "AFR-44",
+        "model_id": "SMHI-RCA4",
+        "driving_model_id": "MPI-M-MPI-ESM-LR",
+        "experiment_id": "rcp85",
+        "frequency": "mon"
+      },
+      "first_month": [
+        2081,
+        1
+      ],
+      "last_month": [
+        2090,
+        12
+      ],
+      "month_count": 120,
+      "month_duration_days": [
+        28,
+        29,
+        30,
+        31
+      ],
+      "purpose": "si_s8"
+    },
+    {
+      "file": "mrso_AFR-44_MPI-M-MPI-ESM-LR_rcp85_r1i1p1_SMHI-RCA4_v1_mon_208101-209012.nc",
+      "status": "PASS",
+      "errors": [],
+      "bytes": 5933042,
+      "sha256": "de5b729e9396e18a564854cd97180152df38f5b081f2160a789742382254bf6c",
+      "dimensions": {
+        "time": 120,
+        "rlat": 201,
+        "rlon": 194,
+        "bnds": 2
+      },
+      "calendar": "proleptic_gregorian",
+      "time_bounds_name": "time_bnds",
+      "variable_units": "kg m-2",
+      "attributes": {
+        "CORDEX_domain": "AFR-44",
+        "model_id": "SMHI-RCA4",
+        "driving_model_id": "MPI-M-MPI-ESM-LR",
+        "experiment_id": "rcp85",
+        "frequency": "mon"
+      },
+      "first_month": [
+        2081,
+        1
+      ],
+      "last_month": [
+        2090,
+        12
+      ],
+      "month_count": 120,
+      "month_duration_days": [
+        28,
+        29,
+        30,
+        31
+      ],
+      "purpose": "si_s8"
+    }
+  ],
+  "pass_count": 16,
+  "fail_count": 0,
+  "caveat": "File identity/metadata only; not road-slope/curvature, IRI, monthly-iteration or old-run provenance."
+}

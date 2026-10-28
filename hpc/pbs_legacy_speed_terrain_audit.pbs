@@ -1,0 +1,22 @@
+#!/bin/bash -l
+#PBS -N terrain_zero_benin
+#PBS -l select=1:ncpus=2:mem=8gb
+#PBS -l walltime=00:30:00
+#PBS -j oe
+
+set -euo pipefail
+module load xarray/2023.9.0-gfbf-2023a netcdf4-python/1.6.4-foss-2023a
+
+: "${AUDIT_ROOT:?AUDIT_ROOT is required}"
+: "${CLIMATE_DIR:?CLIMATE_DIR is required}"
+: "${SPEED_ZIP:?SPEED_ZIP is required}"
+
+cd "$AUDIT_ROOT"
+python code/hpc/audit_legacy_speed_terrain.py \
+  --climate-dir "$CLIMATE_DIR" \
+  --speed-zip "$SPEED_ZIP" \
+  --country Benin \
+  --stride 1000 \
+  --output "$AUDIT_ROOT/results/benin_legacy_speed_zero_terrain_cx3.json"
+
+sha256sum "$AUDIT_ROOT/results/benin_legacy_speed_zero_terrain_cx3.json"
