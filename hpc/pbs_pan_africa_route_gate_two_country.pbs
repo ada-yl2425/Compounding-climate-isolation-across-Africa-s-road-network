@@ -1,0 +1,37 @@
+#!/bin/bash -l
+#PBS -l select=1:ncpus=4:mem=32gb
+#PBS -l walltime=02:00:00
+#PBS -N pan_c04_2ct_gate
+
+# Engineering-only gate on legacy speeds; does not create paper metrics.
+set -euo pipefail
+: "${RUN_ROOT:?}"
+: "${BENIN_WORK:?}"
+: "${BURKINA_WORK:?}"
+: "${PYTHON_BIN:?}"
+: "${CODE_COMMIT:?}"
+
+module load geopandas/0.14.2-foss-2023a \
+  xarray/2023.9.0-gfbf-2023a \
+  python-igraph/0.11.4-foss-2023a \
+  Arrow/16.1.0-gfbf-2023b
+
+mkdir -p "$RUN_ROOT/inputs/roads" "$RUN_ROOT/inputs/speeds"
+ln -s "$BENIN_WORK/Benin" "$RUN_ROOT/inputs/roads/Benin"
+ln -s "$BURKINA_WORK/BurkinaFaso" "$RUN_ROOT/inputs/roads/BurkinaFaso"
+ln -s "$BENIN_WORK/Benin_road_speed.csv" "$RUN_ROOT/inputs/speeds/Benin_road_speed.csv"
+ln -s "$BURKINA_WORK/BurkinaFaso_road_speed.csv" "$RUN_ROOT/inputs/speeds/BurkinaFaso_road_speed.csv"
+
+cd "$RUN_ROOT/code"
+"$PYTHON_BIN" -m hpc.pilot_pan_africa_route_gate \
+  --roads-dir "$RUN_ROOT/inputs/roads" \
+  --speed-dir "$RUN_ROOT/inputs/speeds" \
+  --nodes-zip "$RUN_ROOT/inputs/africa_layer.zip" \
+  --registry-csv "$RUN_ROOT/code/audit/road_speed_alignment_registry_2026-10-27.csv" \
+  --country-a Benin \
+  --country-b BurkinaFaso \
+  --code-commit "$CODE_COMMIT" \
+  --speed-provenance-gate "C00_Benin_BurkinaFaso_input_alignment_PASS_old_speed" \
+  --output-dir "$RUN_ROOT/results"
+
+echo "PAN_C04_2CT_GATE_FINISHED job=${PBS_JOBID:-unknown}"
