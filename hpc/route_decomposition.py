@@ -100,6 +100,10 @@ def decompose_od_routes(
                 "direct_path_increase_pct": None,
                 "rerouting_relief_pct_of_fixed": None,
                 "baseline_path_length_km": None,
+                "baseline_path_speed_normal_kmh": None,
+                "baseline_path_speed_extreme_kmh": None,
+                "baseline_path_speed_reduction_pct": None,
+                "baseline_path_mean_segment_speed_reduction_pct": None,
                 "baseline_path_road_ids": None,
             }
             if base is None:
@@ -117,11 +121,20 @@ def decompose_od_routes(
                     row["status"] = "extreme_unreachable"
                 elif rerouted > fixed and not math.isclose(rerouted, fixed, rel_tol=1e-9, abs_tol=1e-10):
                     raise ValueError("Rerouted path cannot cost more than the fixed baseline path")
+                route_length = sum(float(lookup[rid]["length_km"]) for rid in road_ids)
+                segment_reductions = [
+                    1 - float(lookup[rid]["w0"]) / float(lookup[rid]["w1"])
+                    for rid in road_ids
+                ]
                 row.update(
                     t_fixed_extreme_h=fixed,
                     direct_path_increase_pct=100 * (fixed / base - 1),
                     rerouting_relief_pct_of_fixed=(100 * (fixed - rerouted) / fixed if rerouted is not None else None),
-                    baseline_path_length_km=sum(float(lookup[rid]["length_km"]) for rid in road_ids),
+                    baseline_path_length_km=route_length,
+                    baseline_path_speed_normal_kmh=route_length / base,
+                    baseline_path_speed_extreme_kmh=route_length / fixed,
+                    baseline_path_speed_reduction_pct=100 * (1 - base / fixed),
+                    baseline_path_mean_segment_speed_reduction_pct=100 * sum(segment_reductions) / len(segment_reductions),
                     baseline_path_road_ids=road_ids,
                 )
             records.append(row)

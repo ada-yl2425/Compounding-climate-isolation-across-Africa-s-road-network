@@ -38,6 +38,10 @@ def test_fixed_route_holds_physical_road_not_just_node_path():
     assert row["t_fixed_extreme_h"] == 11.0
     assert row["t_rerouted_extreme_h"] == 3.0
     assert row["baseline_path_length_km"] == 20.0
+    assert row["baseline_path_speed_normal_kmh"] == 10.0
+    assert math.isclose(row["baseline_path_speed_extreme_kmh"], 20 / 11)
+    assert math.isclose(row["baseline_path_speed_reduction_pct"], 100 * (1 - 2 / 11))
+    assert math.isclose(row["baseline_path_mean_segment_speed_reduction_pct"], 45.0)
     assert math.isclose(row["direct_path_increase_pct"], 450.0)
     assert math.isclose(row["rerouting_relief_pct_of_fixed"], 100 * 8 / 11)
 
